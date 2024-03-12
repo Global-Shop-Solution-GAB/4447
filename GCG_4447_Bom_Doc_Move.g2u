@@ -1,0 +1,103 @@
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	F.Intrinsic.Control.CallSub(Move_Files)
+	F.Intrinsic.Control.CallSub(Exit)
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch	
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Move.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Move_Files.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sLinkDir.Declare(String,"")
+	V.Local.sMoveDir.Declare(String,"")
+	V.Local.sFiles.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.sMoveFile.Declare(String,"")
+	V.Local.sLinkFile.Declare(String,"")
+	V.Local.iRet.Declare(Long,0)
+	V.Local.bRet.Declare(Boolean,False)
+	V.Local.sSql.Declare(String,"")
+	
+	'getting the source and link dir.
+	F.Intrinsic.Control.If(V.DataTable.Dir.Exists,=,False)
+		V.Local.sSql.Set("Select MFG_Source_Dir, MFG_Link_Dir, Doc_Group From GCG_4447_BomLink_Dir")
+		F.ODBC.Connection!Con.OpenCompanyConnection
+		
+		F.Data.DataTable.CreateFromSQL("Dir","Con",V.Local.sSql,True)
+		
+		F.ODBC.Connection!Con.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,=,-1)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.Else
+		V.Local.sLinkDir.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).MFG_Link_Dir!FieldValTrim)
+		F.Intrinsic.Control.If(V.Local.sLinkDir.Right1,<>,"\")
+			F.Intrinsic.String.Build("{0}\",V.Local.sLinkDir,V.Local.sLinkDir)
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.String.Build("{0}MFGLockFile\",V.Local.sLinkDir,V.Local.sMoveDir)
+		F.Intrinsic.File.DirExists(V.Local.sMoveDir,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet,=,False)
+			F.Intrinsic.File.CreateDir(V.Local.sMoveDir)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.File.GetFileList(V.Local.sMoveDir,V.Local.sFiles)
+	
+	F.Intrinsic.String.Split(V.Local.sFiles,":",V.Local.sFiles)
+	
+	'moving files that was locked during the bom doc link program.
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sFiles.UBound,1)
+		F.Intrinsic.String.Build("{0}{1}",v.Local.sLinkDir,V.Local.sFiles(V.Local.i),V.Local.sLinkFile)
+		F.Intrinsic.String.Build("{0}{1}",V.Local.sMoveDir,V.Local.sFiles(V.Local.i),V.Local.sMoveFile)
+		
+		F.Intrinsic.File.Exists(V.Local.sLinkFile,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet)
+			F.Intrinsic.File.DeleteFile(V.Local.sLinkFile)
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.File.MoveFile(V.Local.sMoveFile,V.Local.sLinkFile,V.Local.iRet)
+
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch	
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Move.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Move_Files.End
+
+Program.Sub.Exit.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	F.Intrinsic.Control.End
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch	
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Move.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Exit.End
