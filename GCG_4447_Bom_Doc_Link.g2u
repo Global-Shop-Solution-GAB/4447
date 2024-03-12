@@ -1,0 +1,747 @@
+Program.Sub.ScreenSU.Start
+Gui.FormBomDoc..Create
+Gui.FormBomDoc..Caption("Bom Parent Doc link")
+Gui.FormBomDoc..Size(6915,1785)
+Gui.FormBomDoc..MinX(0)
+Gui.FormBomDoc..MinY(0)
+Gui.FormBomDoc..Position(0,0)
+Gui.FormBomDoc..BackColor(-2147483633)
+Gui.FormBomDoc..MousePointer(0)
+Gui.FormBomDoc..Event(UnLoad,FormBomDoc_UnLoad)
+Gui.FormBomDoc.lblBomParent.Create(Label,"Select BOM Parent",True,2520,255,0,105,240,True,0,"Arial",8,-2147483633,0)
+Gui.FormBomDoc.txtBomParent.Create(TextBox,"",True,2145,300,0,105,495,True,0,"Arial",8,-2147483643,1)
+Gui.FormBomDoc.txtBomParent.MaxLength(17)
+Gui.FormBomDoc.txtBomParentRev.Create(TextBox,"",True,615,300,0,2355,495,True,0,"Arial",8,-2147483643,1)
+Gui.FormBomDoc.txtBomParentRev.MaxLength(3)
+Gui.FormBomDoc.cmdParent.Create(Button)
+Gui.FormBomDoc.cmdParent.Size(420,375)
+Gui.FormBomDoc.cmdParent.Position(3090,450)
+Gui.FormBomDoc.cmdParent.Caption("^")
+Gui.FormBomDoc.cmdParent.Event(Click,cmdParent_Click)
+Gui.FormBomDoc.cmdSubmit.Create(Button)
+Gui.FormBomDoc.cmdSubmit.Size(855,375)
+Gui.FormBomDoc.cmdSubmit.Position(105,885)
+Gui.FormBomDoc.cmdSubmit.Caption("Submit")
+Gui.FormBomDoc.cmdSubmit.Event(Click,cmdSubmit_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.iGroup.Declare(Long,-1)
+V.Global.sSourceDir.Declare(string)
+V.Global.sLinkDir.Declare(string)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sRow.Declare(String,"")
+	V.Local.sParent.Declare(String,"")
+	V.Local.sRev.Declare(String,"")
+	V.Local.sFile.Declare(String,"")
+	V.Local.sValue.Declare(String,"")
+	V.Local.sRec.Declare(String,"")
+	v.Local.bCheck.Declare(boolean)
+
+	'Coded by RLK
+	'Project During Bom Compare or from a menu item. This project will look for a PDF with the name of the Parent Part and parse the file for each part in the BOM in GSS and merge all found pages for each part.
+	'This new pdf will be saved in the link dir that is determined with the dir maint program.
+	'This newly saved pdf will then be saved in doc control under the part it's created for.
+	
+	'9/5/19 - DD - Set this script to be controlled by a watchdog program that runs off Online Update, so the GUI on this project is no longer needed.  The user will now only drop files, each named as a part number, into the MFG source dir.  This script then picks that file up and attaches it to the part.
+	
+	F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+		'Bom Compare Post Process Hook
+		F.Intrinsic.Control.Case(50312)	
+			F.Intrinsic.Control.If(V.Caller.User.UCase,=,"SUPERVSR")
+
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.String.Build("{0}\{1}",V.Caller.LocalGSSTempDir,V.Passed.Main-PostProcessData-bdf,V.Local.sFile)
+			F.Intrinsic.File.File2String(V.Local.sFile,V.Local.sRow)
+			V.Local.sRec.Set(V.Local.sRow)
+'			F.Intrinsic.String.Split(V.Local.sRow,V.Ambient.NewLine,V.Local.sRow)
+'			F.Intrinsic.String.Split(V.Local.sRow(7),"|~|",V.Local.sValue)
+'			F.Intrinsic.String.RPad(V.Local.sValue(0)," ",20,V.Local.sParent)
+'			F.Intrinsic.String.Right(V.Local.sParent,3,V.Local.sRev)
+'			F.Intrinsic.String.Left(V.Local.sParent,17,V.Local.sParent)
+'			Gui.FormBomDoc.txtBomParent.Text(V.Local.sParent.Trim)
+'			Gui.FormBomDoc.txtBomParentRev.Text(V.Local.sRev.Trim)
+'			F.Intrinsic.Control.CallSub(Get_Data)
+			F.Intrinsic.Control.CallSub(BOM_Complete,"Rec",V.Local.sRec)
+			F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+		
+		'Menu Item to allow user to select a Bom Parent
+		f.Intrinsic.Control.CaseElse
+			'Gui.FormBomDoc..Show
+			
+			'Look in specified directory for any files named as a part number.  Attach those documents to the BOM if found.
+			F.Intrinsic.String.Build("{0}\4447_BOM_{1}.stop",V.Caller.FilesDir,V.Caller.CompanyCode,V.Local.sFile)
+			F.Intrinsic.File.Exists(V.Local.sFile,v.Local.bCheck)
+			F.Intrinsic.Control.If(V.Local.bCheck,=,True)
+				F.Intrinsic.Control.End
+			F.Intrinsic.Control.EndIf
+			
+			F.Intrinsic.Control.CallSub(SetDirectories)
+			F.Intrinsic.Control.CallSub(CheckForFiles)
+			F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndSelect
+F.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(ErrorMsg, CurrentSub, v.Ambient.CurrentSubroutine)
+	F.Intrinsic.Control.CallSub(Exit)
+f.Intrinsic.Control.Finally
+	
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.FormBomDoc_UnLoad.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'checking if a the connection is open if so close the connection before exiting program
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!Con.Close
+	F.Intrinsic.Control.EndIf
+	'closing program
+	F.Intrinsic.Control.End
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.FormBomDoc_UnLoad.End
+
+Program.Sub.cmdParent_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.sPart.Declare(String,"")
+	V.Local.sRev.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	V.Local.sTitles.Declare(String,"")
+	V.Local.sWidths.Declare(String,"")
+	
+	F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+	
+	'bom part/rev browser
+'	F.Intrinsic.UI.Browser(3000,"",V.Local.sRet)
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	V.Local.sSql.Set("Select Part, Description From V_Bom_ENG Order by Part")
+	
+	V.Local.sTitles.Set("Part*!*Description")
+	V.Local.sWidths.Set("1800*!*1800")
+	
+	F.Intrinsic.String.Split(V.Local.sTitles,"*!*",V.Local.sTitles)
+	F.Intrinsic.String.Split(V.Local.sWidths,"*!*",V.Local.sWidths)
+	
+	F.Intrinsic.UI.Browser("Select Part","con",V.Local.sSql,V.Local.sTitles,V.Local.sWidths,10200,8700,V.Local.sRet)
+	
+	F.Intrinsic.Control.If(V.Local.sRet,<>,V.Ambient.Cancel)
+		F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+		F.Intrinsic.String.RPad(V.Local.sRet(0)," ",20,V.Local.sRet(0))
+		F.Intrinsic.String.Left(V.Local.sRet(0),17,V.Local.sPart)
+		F.Intrinsic.String.Right(V.Local.sRet(0),3,V.Local.sRev)
+		Gui.FormBomDoc.txtBomParent.Text(V.Local.sPart.Trim)
+		Gui.FormBomDoc.txtBomParentRev.Text(V.Local.sRev.Trim)
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdParent_Click.End
+
+Program.Sub.Get_Data.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	V.Local.sPart.Declare(String,"")
+	V.Local.sRev.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.sTemp.Declare(String,"")
+	V.Local.iIndex.Declare(Long,0)
+	V.Local.iCount.Declare(Long,0)
+	V.Local.sPDF.Declare(String,"")
+	V.Local.sTopParent.Declare(String,"")
+
+	F.Intrinsic.UI.InvokeWaitDialog("Parsing Parent PDF and Attaching Document Links to Inventory Parts..............")
+	'combining parent and rev
+	F.Intrinsic.String.RPad(V.Screen.FormBomDoc!txtBomParent.Text," ",17,V.Local.sPart)
+	F.Intrinsic.String.RPad(V.Screen.FormBomDoc!txtBomParentRev.Text," ",3,V.Local.sRev)
+	F.Intrinsic.String.Build("{0}{1}",V.Local.sPart,V.Local.sRev,V.Local.sPart)
+	
+	V.Local.sPart.Set(V.Local.sPart.Trim)
+	V.Local.sTopParent.Set(V.Local.sPart.Trim)
+	F.Intrinsic.String.Build("{0} {1}",V.Screen.FormBomDoc!txtBomParent.Text,V.Screen.FormBomDoc!txtBomParentRev.Text,V.Local.sPDF)
+	
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	
+	'getting a list of all parts in the BOM
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sPart.UBound,1)
+		F.Intrinsic.Control.CallSub(Get_PartNums,"Parent",V.Local.sPart(V.Local.i))
+		F.Intrinsic.Control.If(V.Args.Parts.Length,>,0)
+			F.Intrinsic.String.Split(V.Args.Parts,"#$#",V.Local.sTemp)
+			F.Intrinsic.Control.For(V.Local.iCount,0,V.Local.sTemp.UBound,1)
+				F.Intrinsic.Math.Add(V.Local.sPart.UBound,1,V.Local.iIndex)
+				F.Intrinsic.Variable.AddToArray(V.Local.sPart,V.Local.sTemp(V.Local.iCount).Trim)
+			F.Intrinsic.Control.Next(V.Local.iCount)
+		F.Intrinsic.Control.EndIf	
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.ODBC.Connection!Con.Close
+	
+	'removing duplicate parts in the BoM
+	F.Intrinsic.String.RemoveArrayDuplicates(V.Local.sPart,V.Local.sPart)
+
+	'loop through array and parse pdf's and merge pdf and attach final pdf to document control
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sPart.UBound,1)
+		'F.Intrinsic.Control.CallSub(Parse_PDF,"Part",V.Local.sPart(V.Local.i),"PDF",v.Local.sPDF,"Parent",V.Local.sTopParent)
+		'attaching doc
+		F.Intrinsic.Control.If(V.Args.File.Length,>,0)
+			F.Intrinsic.Control.CallSub(Attach_Doc,"Part",V.Local.sPart(V.Local.i),"File",V.Args.File)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Intrinsic.UI.CloseWaitDialog
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Get_Data.End
+
+Program.Sub.Get_PartNums.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	V.Local.sPart.Declare(String,"")
+	
+	'getting parts for Parent
+	F.Intrinsic.String.Build("Select Part From V_Bom_Mstr Where Parent = '{0}' and Part <> '{0}'",V.Args.Parent,V.Local.sSql)
+	F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSql,V.Local.sPart)
+	
+	'returning part numbers
+	F.Intrinsic.Variable.AddRV("Parts",V.Local.sPart)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Get_PartNums.End
+
+Program.Sub.Parse_PDF.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sPDF.Declare(String,"")
+	V.Local.sReference.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.sFile.Declare(String,"")
+	V.Local.bCheck.Declare(Boolean,False)
+	V.Local.sMergeFiles.Declare(String,"")
+	V.Local.sSourceDir.Declare(String,"")
+	V.Local.sLinkDir.Declare(String,"")
+	V.Local.bRet.Declare(Boolean,False)
+	V.Local.sMsg.Declare(String,"")
+	V.Local.iID.Declare(Long,0)
+	V.Local.sSql.Declare(String,"")
+	V.Local.iB.Declare(Long,0)
+	V.Local.sSearchPart.Declare(String,"")
+	V.Local.sReference2.Declare(String,"")
+	V.Local.iCount.Declare(Long,0)
+	V.Local.iDel.Declare(Long,0)
+	V.Local.sMoveDir.Declare(String,"")
+	V.Local.bDir.Declare(Boolean,False)
+	
+	'getting the source and link dir.
+	F.Intrinsic.Control.If(V.DataTable.Dir.Exists,=,False)
+		V.Local.sSql.Set("Select MFG_Source_Dir, MFG_Link_Dir, Doc_Group From GCG_4447_BomLink_Dir")
+		F.ODBC.Connection!Con.OpenCompanyConnection
+		
+		F.Data.DataTable.CreateFromSQL("Dir","Con",V.Local.sSql,True)
+		
+		F.ODBC.Connection!Con.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,=,-1)
+		F.Intrinsic.UI.Msgbox("Bom Link Directories have not been set up Go to Menu Item: Bill of Material > File > Bom Link Directories (4447) to set up directories","Attention")
+		F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+	F.Intrinsic.Control.Else
+		V.Local.sSourceDir.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).MFG_Source_Dir!FieldValTrim)
+		F.Intrinsic.Control.If(V.Local.sSourceDir.Right1,<>,"\")
+			F.Intrinsic.String.Build("{0}\",V.Local.sSourceDir,V.Local.sSourceDir)
+		F.Intrinsic.Control.EndIf
+		V.Local.sLinkDir.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).MFG_Link_Dir!FieldValTrim)
+		F.Intrinsic.Control.If(V.Local.sLinkDir.Right1,<>,"\")
+			F.Intrinsic.String.Build("{0}\",V.Local.sLinkDir,V.Local.sLinkDir)
+		F.Intrinsic.Control.EndIf
+		V.Global.iGroup.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).Doc_Group!FieldVal)
+	F.Intrinsic.Control.EndIf
+	
+	'creating pdf reference and opening the pdf
+	F.Intrinsic.String.Build("{0}{1}.pdf",V.Local.sSourceDir,V.Args.PDF.Trim,V.Local.sReference)
+	F.Intrinsic.String.Build("{0}{1}.pdf",V.Local.sLinkDir,V.Args.PDF.Trim,V.Local.sReference2)
+	
+	F.Intrinsic.File.Exists(V.Local.sReference,V.Local.bRet)
+	F.Intrinsic.Control.If(V.Local.bRet)
+		F.ODBC.Connection!Con.OpenCompanyConnection
+		'check if document exist already
+		F.Intrinsic.String.Build("Select Link_ID From ATG_Doc_Assoc Where UCASE(rtrim(Path)+rtrim(File)) = '{0}' and Grp_ID = {1}",V.Local.sReference2.UCASE,V.Global.iGroup,V.Local.sSql)
+		F.ODBC.Connection!Con.OpenLocalRecordSetRO("rst",V.Local.sSql)
+		F.Automation.PDF.Open(V.Local.sPDF,V.Local.sReference)
+		F.Intrinsic.Control.If(V.ODBC.Con!rst.EOF)
+			'getting reference id
+			F.Automation.PDF.GetPageCount(V.Local.sPDF,V.Local.iCount)
+			F.Intrinsic.File.Exists(V.Local.sReference2,V.Local.bCheck)
+			F.Intrinsic.Control.DoUntil(V.Local.bCheck,=,False)
+				F.Intrinsic.File.DeleteFile(V.Local.sReference2)
+				F.Intrinsic.File.Exists(V.Local.sReference2,V.Local.bCheck)
+				F.Intrinsic.Math.Add(V.Local.iDel,1,V.Local.iDel)
+				F.Intrinsic.Control.If(V.Local.iDel,=,11)
+					'file is open so moving to another dir so the file can be moved over later on
+					F.Intrinsic.String.Build("{0}MFGLockFile\",V.Local.sLinkDir,V.Local.sMoveDir)
+					F.Intrinsic.File.DirExists(V.Local.sMoveDir,V.Local.bDir)
+					F.Intrinsic.Control.If(V.Local.bDir,=,False)
+						F.Intrinsic.File.CreateDir(V.Local.sMoveDir)
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.String.Build("{0}{1}",V.Local.sMoveDir,V.Args.PDF.Trim,V.Local.sMoveDir)
+					V.Local.bCheck.Set(False)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.Loop
+			F.Intrinsic.String.Build("{0}\{1}_{2}",V.Caller.LocalGSSTempDir,V.Args.Part,V.Local.i,V.Local.sFile)
+			F.Automation.PDF.ExtractPages(V.Local.sReference,V.Local.sFile,1,V.Local.iCount)
+			F.Automation.PDF.Merge(V.Local.sFile,V.Local.sReference2)
+			F.Global.DocumentControl.CreateReference(V.Args.Parent,30,V.Local.iID)
+			'attaching document to part in document control
+			F.Global.DocumentControl.AddDocument(V.Local.iID,V.Local.sReference2,"Manufacturing Drawing PDF",V.Global.iGroup,"")
+		F.Intrinsic.Control.Else
+			'getting reference id		
+			F.Automation.PDF.GetPageCount(V.Local.sPDF,V.Local.iCount)
+			F.Intrinsic.File.Exists(V.Local.sReference2,V.Local.bCheck)
+			V.Local.iDel.Set(1)
+			F.Intrinsic.Control.DoUntil(V.Local.bCheck,=,False)
+				F.Intrinsic.File.DeleteFile(V.Local.sReference2)
+				F.Intrinsic.File.Exists(V.Local.sReference2,V.Local.bCheck)
+				F.Intrinsic.Math.Add(V.Local.iDel,1,V.Local.iDel)
+				F.Intrinsic.Control.If(V.Local.iDel,=,11)
+					'file is open so moving to another dir so the file can be moved over later on
+					F.Intrinsic.String.Build("{0}MFGLockFile\",V.Local.sLinkDir,V.Local.sMoveDir)
+					F.Intrinsic.File.DirExists(V.Local.sMoveDir,V.Local.bDir)
+					F.Intrinsic.Control.If(V.Local.bDir,=,False)
+						F.Intrinsic.File.CreateDir(V.Local.sMoveDir)
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.String.Build("{0}{1}.pdf",V.Local.sMoveDir,V.Args.PDF.Trim,V.Local.sMoveDir)
+					V.Local.bCheck.Set(False)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.Loop
+			F.Intrinsic.String.Build("{0}\{1}_{2}",V.Caller.LocalGSSTempDir,V.Args.Part,V.Local.i,V.Local.sFile)
+			F.Automation.PDF.ExtractPages(V.Local.sReference,V.Local.sFile,1,V.Local.iCount)
+			F.Intrinsic.Control.If(V.Local.sMoveDir,<>,"")
+				F.Automation.PDF.Merge(V.Local.sFile,V.Local.sMoveDir)
+			F.Intrinsic.Control.Else
+				F.Automation.PDF.Merge(V.Local.sFile,V.Local.sReference2)
+			F.Intrinsic.Control.EndIf
+			V.Local.sMoveDir.Set("")
+		F.Intrinsic.Control.EndIf
+		F.ODBC.Con!rst.Close
+		F.ODBC.Connection!Con.Close
+'		F.Automation.PDF.Open(V.Local.sPDF,V.Local.sReference)	
+		F.Intrinsic.String.RPad(V.Args.Part," ",20,V.Local.sSearchPart)
+		V.Local.sSearchPart.RedimPreserve(0,1)
+		V.Local.sSearchPart(1).Set(V.Local.sSearchPart.Right3)
+		V.Local.sSearchPart(0).Set(V.Local.sSearchPart.Left17)
+		F.Intrinsic.String.Build("{0}@{1}",V.Local.sSearchPart(0).Trim,V.Local.sSearchPart(1).Trim,V.Local.sSearchPart)
+		'searching pdf for part number
+		F.Automation.PDF.TextSearch(V.Local.sPDF,V.Local.sSearchPart.Trim,V.Local.sRet)
+		
+		'check for return
+		F.Intrinsic.Control.If(V.Local.sRet,<>,"***NO RETURN***")
+			'splitting return to be able to loop through pages
+			F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+			F.Intrinsic.Control.For(V.Local.i,0,V.Local.sRet.UBound,1)
+				F.Intrinsic.Control.If(V.Local.sRet(V.Local.i).Long,<>,1)
+					'build temp file name for each page per part, will use this to merge files together further down
+					F.Intrinsic.String.Build("{0}\{1}_{2}",V.Caller.LocalGSSTempDir,V.Args.Part,V.Local.i,V.Local.sFile)
+					'extract one at a time per part
+					F.Automation.PDF.ExtractPages(V.Local.sReference,V.Local.sFile,V.Local.sRet(V.Local.i),V.Local.sRet(V.Local.i))
+					
+					'build string back together for each file(page) created per part.
+					f.Intrinsic.File.Exists(v.Local.sFile,v.Local.bCheck)
+					f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+						f.Intrinsic.Control.If(v.Local.sMergeFiles.Trim,<>,"")
+							f.Intrinsic.String.Build("{0}*!*{1}",v.Local.sMergeFiles.trim,v.Local.sFile.Trim,v.Local.sMergeFiles)
+						f.Intrinsic.Control.Else
+							v.Local.sMergeFiles.Set(v.Local.sFile.Trim)
+						f.Intrinsic.Control.EndIf
+						
+					f.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+			'next page
+			F.Intrinsic.Control.Next(V.Local.i)
+			
+			F.Intrinsic.Control.If(V.Args.Part.Trim,<>,"")
+				'---next stetp is to merge files into one, then delete the files.	
+				'set file name as part
+				f.Intrinsic.String.Build("{0}MFG-{1}.pdf",V.Local.sLinkDir,V.Args.Part.Trim,v.Local.sFile)
+				
+				F.Intrinsic.Control.If(V.Local.sMergeFiles.Length,>,0)				
+					'merge back to booklet for part with all pages that were extracted.
+					F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bCheck)
+					V.Local.iDel.Set(1)
+					F.Intrinsic.Control.DoUntil(V.Local.bCheck,=,False)
+						F.Intrinsic.File.DeleteFile(V.Local.sFile)
+						F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bCheck)
+						F.Intrinsic.Math.Add(V.Local.iDel,1,V.Local.iDel)
+						F.Intrinsic.Control.If(V.Local.iDel,=,11)
+							'file is open so moving to another dir so the file can be moved over later on
+							F.Intrinsic.String.Build("{0}MFGLockFile\",V.Local.sLinkDir,V.Local.sMoveDir)
+							F.Intrinsic.File.DirExists(V.Local.sMoveDir,V.Local.bDir)
+							F.Intrinsic.Control.If(V.Local.bDir,=,False)
+								F.Intrinsic.File.CreateDir(V.Local.sMoveDir)
+							F.Intrinsic.Control.EndIf
+							F.Intrinsic.String.Build("{0}MFG-{1}.pdf",V.Local.sMoveDir,V.Args.Part.Trim,V.Local.sMoveDir)
+							V.Local.bCheck.Set(False)
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.Loop
+					
+					F.Intrinsic.Control.If(V.Local.sMoveDir,<>,"")
+						f.Automation.PDF.Merge(v.Local.sMergeFiles,v.Local.sMoveDir.Trim)
+					F.Intrinsic.Control.Else
+						f.Automation.PDF.Merge(v.Local.sMergeFiles,v.Local.sFile.Trim)
+					F.Intrinsic.Control.EndIf
+					V.Local.sMoveDir.Set("")
+					
+					'now delete all the individual files(pages) again.
+					f.Intrinsic.String.Split(v.Local.sMergeFiles,"*!*",v.Local.sMergeFiles)
+					f.Intrinsic.Control.For(v.Local.iB,v.Local.sMergeFiles.LBound,v.Local.sMergeFiles.UBound,1)
+						'reset bckeck
+						v.Local.bCheck.Set(True)
+						'keep doing this till file is actually gone
+						f.Intrinsic.Control.DoUntil(v.Local.bCheck,=,False)
+							f.Intrinsic.File.DeleteFile(v.Local.sMergeFiles(v.Local.iB).trim)
+							f.Intrinsic.File.Exists(v.Local.sMergeFiles(v.Local.iB).trim,v.Local.bCheck)
+						f.Intrinsic.Control.Loop
+					f.Intrinsic.Control.Next(v.Local.iB)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.Else	
+				V.Local.sFile.Set("")
+			F.Intrinsic.Control.EndIf
+			'reset variable
+			v.Local.sMergeFiles.Set("")
+		F.Intrinsic.Control.Else
+			V.Local.sFile.Set("")
+			V.Local.sMergeFiles.Set("")
+		F.Intrinsic.Control.EndIf
+		
+		'close pdf
+		F.Automation.PDF.Close(V.Local.sPDF)
+		
+		F.Intrinsic.Variable.AddRV("File",V.Local.sFile)
+	F.Intrinsic.Control.Else	
+		F.Intrinsic.String.Build("No PDF File for Parent {0} located in {1}",V.Args.Part,V.Local.sSourceDir,V.Local.sMsg)
+		F.Intrinsic.UI.Msgbox(V.Local.sMsg)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Parse_PDF.End
+
+Program.Sub.Attach_Doc.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.iID.Declare(Long,0)
+	V.Local.iLink.Declare(Long,0)
+	V.Local.sFileName.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	
+	'checking if file was created
+	F.Intrinsic.Control.If(V.Args.File.Length,>,0)
+		F.Intrinsic.String.Split(V.Args.File,"\",V.Local.sFileName)
+		'check if document exist already
+		F.Intrinsic.String.Build("Select Link_ID From ATG_Doc_Assoc Where UCASE(rtrim(Path)+rtrim(File)) = '{0}' and Grp_ID = {1}",V.Args.File.UCASE,V.Global.iGroup,V.Local.sSql)
+		F.ODBC.Connection!Con.OpenLocalRecordSetRO("rst",V.Local.sSql)
+		F.Intrinsic.Control.If(V.ODBC.Con!rst.EOF)
+			'getting reference id
+			F.Global.DocumentControl.CreateReference(V.Args.Part,30,V.Local.iID)
+			'attaching document to part in document control
+			F.Global.DocumentControl.AddDocument(V.Local.iID,V.Args.File,"Manufacturing Drawing PDF",V.Global.iGroup,"")
+		F.Intrinsic.Control.EndIf
+		F.ODBC.Con!rst.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Attach_Doc.End
+
+Program.Sub.cmdSubmit_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	Gui.FormBomDoc..Visible(False)
+	
+	F.Intrinsic.Control.CallSub(Get_Data)
+	
+	F.Intrinsic.Control.If(V.DataTable.Dir.Exists)
+		F.Data.DataTable.Close("Dir")
+	F.Intrinsic.Control.EndIf
+	
+	Gui.FormBomDoc.txtBomParent.Text("")
+	Gui.FormBomDoc.txtBomParentRev.Text("")
+	
+	GUi.FormBomDoc..Visible(True)
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdSubmit_Click.End
+
+Program.Sub.BOM_Complete.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.sTitles.Declare(String,"")
+	V.Local.sTypes.Declare(String,"")
+	V.Local.iCol.Declare(Long,0)
+	V.Local.i.Declare(Long,0)
+	V.Local.sSql.Declare(String,"")
+	
+	V.Local.sRet.Set(V.Args.Rec)
+	
+	F.Intrinsic.BDF.Load("GAB-BDF","Main-PostProcessData-bdf")
+	
+	F.Intrinsic.BDF.ReadColumnTitle("GAB-BDF",V.Local.sTitles)
+	
+	f.Intrinsic.BDF.ReadColumnCount("GAB-BDF",v.Local.iCol)
+	f.Intrinsic.Math.Sub(v.Local.iCol,1,v.Local.iCol)
+
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.iCol,1)
+		F.Intrinsic.Control.If(V.Local.i,=,0)
+			V.Local.sTypes.Set("String")
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("{0}*!*String",V.Local.sTypes,V.Local.sTypes)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Data.DataTable.CreateFromString("BomComp",V.Local.sRet,V.Local.sTitles,V.Local.sTypes,"|~|",V.Ambient.NewLine,True)
+	
+	F.Data.DataTable.DeleteRow("BomComp",6)
+	F.Data.DataTable.DeleteRow("BomComp",5)
+	F.Data.DataTable.DeleteRow("BomComp",4)
+	F.Data.DataTable.DeleteRow("BomComp",3)
+	F.Data.DataTable.DeleteRow("BomComp",2)
+	F.Data.DataTable.DeleteRow("BomComp",1)
+	F.Data.DataTable.DeleteRow("BomComp",0)
+	
+	F.Data.DataTable.AcceptChanges("BomComp")
+	
+	F.Data.DataView.Create("BomComp","Temp",22,"","")
+	F.Data.DataView.ToDataTableDistinct("BomComp","Temp","DistParent","Parent",True)
+	
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.DistParent.RowCount--,1)
+		F.Intrinsic.String.Build("Update Bom_Mstr Set Bom_Complete = 'Y' Where Parent = '{0}' and Sequence_Bom = '0000'",V.DataTable.DistParent(V.Local.i).Parent!FieldValTrim,V.Local.sSql)
+		F.ODBC.Connection!Con.Execute(V.Local.sSql)
+	F.Intrinsic.Control.Next(V.Local.i)
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDoc_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.BOM_Complete.End
+
+Program.Sub.ErrorMsg.Start
+v.Local.sError.Declare
+
+'Closes ODBC connection, default to connection : "con"
+f.Intrinsic.Control.If(V.ODBC.Con.Exists, =, 1)
+	f.ODBC.Connection!con.Close
+f.Intrinsic.Control.EndIf
+
+'Generic Error message.
+f.Intrinsic.String.Build("Project GCG_4447_Bom_Doc_Link.g2u {0}{0}Subroutine: {1}{0}Error: {2} with Description: {3}", v.Ambient.NewLine, v.Args.CurrentSub, v.Ambient.ErrorNumber, v.Ambient.ErrorDescription, v.Local.sError)
+f.Intrinsic.UI.Msgbox(v.Local.sError)
+Program.Sub.ErrorMsg.End
+
+'-------------TO TEST-----------
+Program.Sub.SetDirectories.Start
+	f.Intrinsic.Control.Try
+		v.Local.sSQL.Declare(string)
+		
+		'getting the source and link dir.
+		F.Intrinsic.Control.If(V.DataTable.Dir.Exists,=,False)
+			V.Local.sSql.Set("Select MFG_Source_Dir, MFG_Link_Dir, Doc_Group From GCG_4447_BomLink_Dir")
+			F.ODBC.Connection!Con.OpenCompanyConnection
+				F.Data.DataTable.CreateFromSQL("Dir","Con",V.Local.sSql,True)
+			F.ODBC.Connection!Con.Close
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,=,-1)
+			F.Intrinsic.UI.Msgbox("Bom Link Directories have not been set up Go to Menu Item: Bill of Material > File > Bom Link Directories (4447) to set up directories","Attention")
+			F.Intrinsic.Control.End
+		F.Intrinsic.Control.Else
+			V.Global.sSourceDir.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).MFG_Source_Dir!FieldValTrim)
+			F.Intrinsic.Control.If(V.Global.sSourceDir.Right1,<>,"\")
+				F.Intrinsic.String.Build("{0}\",V.Global.sSourceDir,V.Global.sSourceDir)
+			F.Intrinsic.Control.EndIf
+			V.Global.sLinkDir.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).MFG_Link_Dir!FieldValTrim)
+			F.Intrinsic.Control.If(V.Global.sLinkDir.Right1,<>,"\")
+				F.Intrinsic.String.Build("{0}\",V.Global.sLinkDir,V.Global.sLinkDir)
+			F.Intrinsic.Control.EndIf
+			V.Global.iGroup.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).Doc_Group!FieldVal)
+		F.Intrinsic.Control.EndIf
+	f.Intrinsic.Control.Catch
+		f.Intrinsic.Control.CallSub(ErrorMsg, CurrentSub, v.Ambient.CurrentSubroutine)
+		F.Intrinsic.Control.CallSub(Exit)
+	f.Intrinsic.Control.EndTry
+Program.Sub.SetDirectories.End
+
+'-------------TO DO-------------
+Program.Sub.CheckForFiles.Start
+	f.Intrinsic.Control.Try
+		v.Local.sFilesList.Declare(string)
+		v.Local.iCnt.Declare(long,0)
+		v.local.sSQL.Declare(string)
+		v.Local.sFileName.Declare(string)
+		v.Local.sRet.Declare(string)
+		v.Local.sSourceFileName.Declare(string)
+		v.Local.sTargetFileName.Declare(string)
+		v.Local.sFileExt.Declare(string)
+		V.Local.iID.Declare(long)
+		V.Local.sPart.Declare(String)
+		V.Local.sTemp.Declare(String)
+		V.Local.bRet.Declare(Boolean)
+		V.Local.bRet2.Declare(Boolean)
+
+		'Loop through the directory and see if any files are present that need to be attached
+		f.Intrinsic.File.GetFileList(v.Global.sSourceDir,v.Local.sFilesList)
+		f.Intrinsic.String.split(v.Local.sFilesList,":",v.Local.sFilesList)
+		f.Intrinsic.Control.If(v.Local.sFilesList.Trim,<>,"")
+			'If the file name equates to an existing part, move the file from the source dir to the link dir.  Then, attach.
+			f.Intrinsic.Control.For(v.Local.iCnt,0,v.Local.sFilesList.UBound,1)
+				f.Intrinsic.Control.If(v.Local.sFilesList(v.local.iCnt).Trim,<>,"")
+					f.Intrinsic.String.Split(v.Local.sFilesList(v.local.iCnt),".",v.Local.sFileName)
+					v.Local.sFileExt.Set(v.Local.sFileName(v.Local.sFileName.UBound))
+					f.Intrinsic.String.Split(v.Local.sFileName(0),"\",v.Local.sFileName)
+					F.Intrinsic.String.Split(v.Local.sFileName(v.Local.sFileName.UBound),"_",V.Local.sTemp)
+					V.Local.sTemp.RedimPreserve(0,1)
+					
+					F.Intrinsic.String.RPad(V.Local.sTemp(0)," ",17,V.Local.sPart)
+					F.Intrinsic.String.Build("{0}{1}",V.Local.sPart,V.Local.sTemp(1),V.Local.sPart)
+					f.Intrinsic.String.Build("Select Part from v_inventory_mstr where part = '{0}';",v.Local.sPart,v.Local.sSQL)
+					f.ODBC.Connection!con.opencompanyconnection
+						f.ODBC.Connection!con.executeandreturn(v.Local.sSQL,2,v.Local.sRet)
+					f.ODBC.Connection!con.Close
+						
+					f.Intrinsic.Control.If(v.Local.sRet,!=,"")
+						f.Intrinsic.String.Build("{0}{1}.{2}",v.Global.sSourceDir,v.Local.sFileName(v.Local.sFileName.UBound),v.Local.sFileExt,v.Local.sSourceFileName)
+						f.Intrinsic.String.Build("{0}{1}.{2}",v.Global.sLinkDir,v.Local.sFileName(v.Local.sFileName.UBound),v.Local.sFileExt,v.Local.sTargetFileName)
+						'checking if file is locked if so move to next file	
+						F.Intrinsic.File.IsFileLocked(v.Local.sSourceFileName,V.Local.bRet)
+						F.Intrinsic.Control.If(V.Local.bRet,=,False)
+							F.Intrinsic.File.Exists(V.Local.sTargetFileName,V.Local.bRet2)
+							F.Intrinsic.Control.If(V.Local.bRet2)
+								F.Intrinsic.File.IsFileLocked(v.Local.sTargetFileName,V.Local.bRet2)
+							F.Intrinsic.Control.Else
+								V.Local.bRet2.Set(False)
+							F.Intrinsic.Control.EndIf
+							F.Intrinsic.Control.If(V.Local.bRet2,=,False)
+								F.Intrinsic.File.Exists(V.Local.sSourceFileName,V.Local.bRet)
+								F.Intrinsic.Control.If(v.Local.bRet)
+									f.Intrinsic.File.CopyOpenFile(v.Local.sSourceFileName,v.Local.sTargetFileName)
+									F.Intrinsic.File.DeleteFile(V.Local.sSourceFileName)
+								
+									'check if document exist already
+									f.Global.DocumentControl.GetLinkID(v.Local.sPart,30,v.Local.iID)
+					
+									f.Intrinsic.Control.If(v.Local.iID,=,-1)
+										F.Global.DocumentControl.CreateReference(v.Local.sPart,30,V.Local.iID)
+									f.Intrinsic.Control.EndIf
+									F.Global.DocumentControl.AddDocument(V.Local.iID,v.Local.sTargetFileName,"Manufacturing Drawing PDF",V.Global.iGroup,"")
+								F.Intrinsic.Control.EndIf
+							F.Intrinsic.Control.EndIf
+						f.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+			f.Intrinsic.Control.Next(v.Local.iCnt)
+		f.Intrinsic.Control.EndIf
+	f.Intrinsic.Control.Catch
+		f.Intrinsic.Control.CallSub(ErrorMsg, CurrentSub, v.Ambient.CurrentSubroutine)
+		F.Intrinsic.Control.CallSub(Exit)
+	f.Intrinsic.Control.EndTry
+Program.Sub.CheckForFiles.End
+
+Program.Sub.Exit.Start
+	F.Intrinsic.Control.Try
+		V.Local.sError.Declare(String,"")
+		V.Local.sGab.Declare(String,"")
+		V.Local.iRet.Declare(Long,0)
+		
+		F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+			F.ODBC.Connection!Con.Close
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.String.Build("{0}\GAB\GAS\GCG_4447_BOM_Doc_Link.g2u",V.Caller.PluginsDir,V.Local.sGab)
+		F.Global.Task.CallAsyncGas(V.Local.sGab,"",2,V.Local.iRet)
+		
+		F.Intrinsic.Control.End
+		
+		F.Intrinsic.Control.ExitSub
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+			F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_PUR_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+			F.Intrinsic.UI.Msgbox(V.Local.sError)
+			F.Intrinsic.Control.End
+		F.Intrinsic.Control.EndIf
+	Function.Intrinsic.Control.EndTry
+Program.Sub.Exit.End
