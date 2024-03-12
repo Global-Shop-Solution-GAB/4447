@@ -1,0 +1,271 @@
+Program.Sub.ScreenSU.Start
+Gui.Form_Bom_Cust..Create
+Gui.Form_Bom_Cust..Caption("Bom Customer View")
+Gui.Form_Bom_Cust..Size(15360,10695)
+Gui.Form_Bom_Cust..MinX(0)
+Gui.Form_Bom_Cust..MinY(0)
+Gui.Form_Bom_Cust..Position(0,0)
+Gui.Form_Bom_Cust..BackColor(-2147483633)
+Gui.Form_Bom_Cust..MousePointer(0)
+Gui.Form_Bom_Cust..Event(UnLoad,Form_Bom_Cust_UnLoad)
+Gui.Form_Bom_Cust.txtPart_No.Create(TextBox,"",True,2610,300,0,105,435,True,0,"Arial",8,-2147483643,1)
+Gui.Form_Bom_Cust.txtPart_No.Locked(True)
+Gui.Form_Bom_Cust.lblPart_No.Create(Label,"Part Number",True,1935,255,0,105,210,True,0,"Arial",8,-2147483633,0)
+Gui.Form_Bom_Cust.chk_AllParts.Create(CheckBox)
+Gui.Form_Bom_Cust.chk_AllParts.Size(2730,360)
+Gui.Form_Bom_Cust.chk_AllParts.Position(3735,405)
+Gui.Form_Bom_Cust.chk_AllParts.Caption("Show All Parts")
+Gui.Form_Bom_Cust.chk_AllParts.DefaultValue("")
+Gui.Form_Bom_Cust.chk_AllParts.Event(Click,Set_Filter)
+Gui.Form_Bom_Cust.GsGridControl_Parts.Create(GsGridControl)
+Gui.Form_Bom_Cust.GsGridControl_Parts.Size(15015,9180)
+Gui.Form_Bom_Cust.GsGridControl_Parts.Position(105,885)
+Gui.Form_Bom_Cust.txtReV.Create(TextBox,"",True,840,300,0,2775,435,True,0,"Arial",8,-2147483643,1)
+Gui.Form_Bom_Cust.txtReV.Locked(True)
+Gui.Form_Bom_Cust.lblReV.Create(Label,"Rev",True,795,255,0,2775,210,True,0,"Arial",8,-2147483633,0)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'TJS, Sept 2020 - Quote 12267: Modified to include Stain and Powdercoat Part Number columns
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+	F.Intrinsic.Control.Case("10210")
+		Gui.Form_Bom_Cust.GsGridControl_Parts.Anchor(15)
+		'setting part no and rev to text boxes
+		Gui.Form_Bom_Cust.txtPart_No.Text(V.Passed.000007)
+		Gui.Form_Bom_Cust.txtReV.Text(V.Passed.000008)
+		
+		'calling sub to get all info from GAB_BOM_Cust_Fields
+		F.Intrinsic.Control.CallSub(Get_Data)
+		
+		'by default the show all parts will be unchecked.
+		Gui.Form_Bom_Cust.chk_AllParts.Value(0)
+		
+		'attaching datatable to a gridview and seeting properties.
+		F.Intrinsic.Control.CallSub(Set_Properties)
+		
+		'applying filter to the grid
+		F.Intrinsic.Control.CallSub(Set_Filter)
+		
+		Gui.Form_Bom_Cust..Show
+		
+	F.Intrinsic.Control.Case("10120")
+		V.Passed.000068.Set("Bom Cust View")
+		
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_BOM_Cust_View.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form_Bom_Cust_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Form_Bom_Cust_UnLoad.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sReturn.Declare(String)
+V.Local.sFile.Declare(String)
+
+F.Intrinsic.String.Build("{0}\{1}4447_Bom_Cust.txt",V.Caller.GasDir,V.Caller.User,V.Local.sFile)
+
+Gui.Form_Bom_Cust.GsGridControl_Parts.Serialize("PartNo",V.Local.sReturn)
+
+F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sReturn)
+
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_BOM_Cust_View.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Form_Bom_Cust_UnLoad.End
+
+Program.Sub.Get_Data.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sSql.Declare(String)
+
+V.Local.sSql.Set("Select PartNo, Revision, InvPart, Description, Quantity, UM, Cost, Source, Drawing, Leadtime, Level, Location, Memo1, Memo2, Parent, Productline, Sequence, SortCode, Tag, Category, parttype, ebbottomside, ebleftside, ebtopside, ebrightside, totallength, totalwidth, graindir, ebpartno1, ebpartno1qty, ebpartno2qty, StainPartNo, PowdercoatPartNo From GAB_BOM_Cust_Fields Order By PartNo,Revision")
+
+F.Data.DataTable.CreateFromSQL("PartNo","con",V.Local.sSql,True)
+F.Data.DataView.Create("PartNo","PartNo")
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_BOM_Cust_View.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form_Bom_Cust_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Get_Data.End
+
+Program.Sub.Set_Properties.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sReturn.Declare(String)
+V.Local.bRet.Declare(Boolean,False)
+
+Gui.Form_Bom_Cust.GsGridControl_Parts.AddGridviewFromDataview("PartNo","PartNo","PartNo")
+
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Level","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Location","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Memo1","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Memo2","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Parent","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Productline","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Sequence","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","SortCode","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Tag","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Category","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","parttype","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebbottomside","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebleftside","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebtopside","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebrightside","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","totallength","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","totalwidth","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","graindir","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno1","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno1qty","Visible",False)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno2qty","Visible",False)
+
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","PartNo","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Revision","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","InvPart","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Description","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Quantity","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","UM","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Cost","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Source","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Drawing","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Leadtime","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Level","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Location","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Memo1","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Memo2","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Parent","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Productline","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Sequence","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","SortCode","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Tag","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Category","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","parttype","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebbottomside","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebleftside","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebtopside","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebrightside","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","totallength","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","totalwidth","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","graindir","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno1","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno1qty","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno2qty","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","StainPartNo","HeaderBackColor","Green")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","PowdercoatPartNo","HeaderBackColor","Green")
+
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","PartNo","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Revision","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","InvPart","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Description","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Quantity","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","UM","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Cost","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Source","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Drawing","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Leadtime","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Level","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Location","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Memo1","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Memo2","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Parent","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Productline","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Sequence","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","SortCode","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Tag","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","Category","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","parttype","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebbottomside","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebleftside","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebtopside","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebrightside","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","totallength","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","totalwidth","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","graindir","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno1","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno1qty","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","ebpartno2qty","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","StainPartNo","HeaderForeColor","White")
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetColumnProperty("PartNo","PowdercoatPartNo","HeaderForeColor","White")
+
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetGridviewProperty("PartNo","ReadOnly",True)
+Gui.Form_Bom_Cust.GsGridControl_Parts.SetGridviewProperty("PartNo","Editable",False)
+
+F.Intrinsic.String.Build("{0}\{1}4447_Bom_Cust.txt",V.Caller.GasDir,V.Caller.User,V.Local.sFile)
+
+F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bRet)
+F.Intrinsic.Control.If(V.Local.bRet,=,True)
+	F.Intrinsic.File.File2String(V.Local.sFile,V.Local.sReturn)
+	Gui.Form_Bom_Cust.GsGridControl_Parts.Deserialize(V.Local.sReturn)
+F.Intrinsic.Control.EndIf
+
+Gui.Form_Bom_Cust.GsGridControl_Parts.MainView("PartNo")
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_BOM_Cust_View.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form_Bom_Cust_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Set_Properties.End
+
+Program.Sub.Set_Filter.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sReV.Declare(String)
+V.Local.sFilter.Declare(String)
+
+F.Intrinsic.Control.If(V.Screen.Form_Bom_Cust!chk_AllParts.Value,=,0)
+	V.Local.sPart.Set(V.Screen.Form_Bom_Cust!txtPart_No.Text)
+	V.Local.sReV.Set(V.Screen.Form_Bom_Cust!txtReV.Text)
+	F.Intrinsic.String.Build("PartNo = '{0}' and Revision = '{1}'",V.Local.sPart,V.Local.sRev,V.Local.sFilter)
+	
+	F.Data.DataView.SetFilter("PartNo","PartNo",V.Local.sFilter)
+F.Intrinsic.Control.Else
+	F.Data.DataView.SetFilter("PartNo","PartNo"," ")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_BOM_Cust_View.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Form_Bom_Cust_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Set_Filter.End
