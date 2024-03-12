@@ -1,0 +1,739 @@
+Program.Sub.ScreenSU.Start
+Gui.FormBinTransfer..Create
+Gui.FormBinTransfer..Caption("Mass Bin Transfer")
+Gui.FormBinTransfer..Size(15360,10560)
+Gui.FormBinTransfer..MinX(0)
+Gui.FormBinTransfer..MinY(0)
+Gui.FormBinTransfer..Position(0,0)
+Gui.FormBinTransfer..BackColor(-2147483633)
+Gui.FormBinTransfer..MousePointer(0)
+Gui.FormBinTransfer..Event(UnLoad,FormBinTransfer_UnLoad)
+Gui.FormBinTransfer.lblBin.Create(Label,"Select Bin",True,1935,255,0,105,285,True,0,"Arial",8,-2147483633,0)
+Gui.FormBinTransfer.txtBin.Create(TextBox,"",True,1215,300,0,105,540,True,0,"Arial",8,-2147483643,1)
+Gui.FormBinTransfer.txtBin.Event(GotFocus,txtBin_GotFocus)
+Gui.FormBinTransfer.txtBin.Event(LostFocus,txtBin_KeyPressEnter)
+Gui.FormBinTransfer.txtBin.Event(KeyPressEnter,txtBin_KeyPressEnter)
+Gui.FormBinTransfer.cmdBin.Create(Button)
+Gui.FormBinTransfer.cmdBin.Size(390,375)
+Gui.FormBinTransfer.cmdBin.Position(1395,510)
+Gui.FormBinTransfer.cmdBin.Caption("^")
+Gui.FormBinTransfer.cmdBin.Event(Click,cmdBin_Click)
+Gui.FormBinTransfer.GsGridControlBin.Create(GsGridControl)
+Gui.FormBinTransfer.GsGridControlBin.Size(14955,8550)
+Gui.FormBinTransfer.GsGridControlBin.Position(105,1035)
+Gui.FormBinTransfer.GsGridControlBin.Event(CellValueChanged,GsGridControlBin_CellValueChanged)
+Gui.FormBinTransfer.GsGridControlBin.Event(KeyPressEnter,GsGridControlBin_KeyPressEnter)
+Gui.FormBinTransfer.GsGridControlBin.Event(MouseCellEnter,GsGridControlBin_MouseCellEnter)
+Gui.FormBinTransfer.GsGridControlBin.Event(RowCellClick,GsGridControlBin_RowCellClick)
+Gui.FormBinTransfer.cmdSubmit.Create(Button)
+Gui.FormBinTransfer.cmdSubmit.Size(855,375)
+Gui.FormBinTransfer.cmdSubmit.Position(105,9720)
+Gui.FormBinTransfer.cmdSubmit.Caption("Submit")
+Gui.FormBinTransfer.cmdSubmit.Event(Click,cmdSubmit_Click)
+Gui.FormBinTransfer.txtToBin.Create(TextBox,"",True,1215,300,0,2040,540,True,0,"Arial",8,-2147483643,1)
+Gui.FormBinTransfer.cmdToBin.Create(Button)
+Gui.FormBinTransfer.cmdToBin.Size(390,375)
+Gui.FormBinTransfer.cmdToBin.Position(3330,510)
+Gui.FormBinTransfer.cmdToBin.Caption("^")
+Gui.FormBinTransfer.cmdToBin.Event(Click,cmdToBin_Click)
+Gui.FormBinTransfer.cmdAuto.Create(Button)
+Gui.FormBinTransfer.cmdAuto.Size(1410,375)
+Gui.FormBinTransfer.cmdAuto.Position(3825,510)
+Gui.FormBinTransfer.cmdAuto.Caption("Auto Fill To Bin")
+Gui.FormBinTransfer.cmdAuto.Event(Click,cmdAuto_Click)
+Gui.FormBinTransfer.chkMoveAll.Create(CheckBox)
+Gui.FormBinTransfer.chkMoveAll.Size(1560,360)
+Gui.FormBinTransfer.chkMoveAll.Position(5325,510)
+Gui.FormBinTransfer.chkMoveAll.Caption("Move All Qty")
+Gui.FormBinTransfer.chkMoveAll.Event(Click,chkMoveAll_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Variable.Global.fQty.Declare(Float)
+Variable.Global.iRow.Declare(Long)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+
+F.ODBC.Connection!Con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+Gui.FormBinTransfer.GsGridControlBin.Anchor(15)
+Gui.FormBinTransfer.cmdSubmit.Anchor(6)
+Gui.FormBinTransfer.txtBin.Anchor(5)
+Gui.FormBinTransfer.txtToBin.Anchor(5)
+GUi.FormBinTransfer.cmdAuto.Anchor(5)
+Gui.FormBinTransfer.cmdToBin.Anchor(5)
+Gui.FormBinTransfer.chkMoveAll.Anchor(5)
+Gui.FormBinTransfer.cmdBin.Anchor(5)
+
+'creating bin dictionary
+F.Data.Dictionary.CreateFromSQL("Bin","con","Select Bin, Bin From V_Bin_Master Order By Bin")
+
+'creating context menu
+Gui.FormBinTransfer..ContextMenuCreate("BinTransfer")
+'adding the menu items
+Gui.FormBinTransfer..ContextMenuAddItem("BinTransfer","Item 0",0)
+'setting item text
+Gui.FormBinTransfer..ContextMenuSetItemText("BinTransfer","Item 0","Bin Transfer")
+'attaching menu to subroutine
+Gui.FormBinTransfer..ContextMenuSetItemEventHandler("BinTransfer","Item 0",BinTransfer)
+
+F.Intrinsic.Control.CallSub(Set_Properties)
+Gui.FormBinTransfer..Show
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.FormBinTransfer_UnLoad.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+
+'closing connection and ending program
+F.ODBC.Connection!Con.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.FormBinTransfer_UnLoad.End
+
+Program.Sub.txtBin_GotFocus.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+
+'selecting all on text box so user and just start typing
+Gui.FormBinTransfer.txtBin.SelectAll
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtBin_GotFocus.End
+
+Program.Sub.txtBin_KeyPressEnter.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sBin.Declare(String)
+V.Local.sSql.Declare(String)
+V.Local.iRet.Declare(Long)
+V.Local.bRet.Declare(Boolean,False)
+
+'when loading a new bin check to see if the user wants to submit what has been entered on the grid
+F.Intrinsic.Control.If(V.DataTable.Bin$Transfer.RowCount--,<>,-1)
+	F.Intrinsic.UI.Msgbox("Would you like to submit the changes before loading a new bin?","Warning",4,V.Local.iRet)
+	F.Intrinsic.Control.If(V.Local.iRet,=,6)
+		'user selected yes so call the submit sub
+		F.Intrinsic.Control.CallSub(cmdSubmit_Click)
+		'checking if an argument exists if this argument exists there was a blank to bin in the grid that the user must fix before submiting
+		F.Intrinsic.Variable.ArgExists("ExitSub",V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet,=,True)
+			F.Intrinsic.Control.If(V.Args.ExitSub,=,"True")
+				F.Intrinsic.Control.ExitSub
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+'deleting all information out of the datatable that is used to display in the grid.  accepting changes so the rowstates are reset as well
+F.Data.DataTable.DeleteRow("Bin$Transfer")
+F.Data.DataTable.DeleteRow("Bin")
+F.Data.DataTable.AcceptChanges("Bin")
+F.Data.DataTable.AcceptChanges("Bin$Transfer")
+
+V.Local.sBin.Set(V.Screen.FormBinTransfer!txtBin.Text)
+
+'accounting for if the scan bins
+F.Intrinsic.String.Split(V.Local.sBin,"$%",V.Local.sBin)
+
+F.Intrinsic.Control.If(V.Local.sBin.UBound,=,1)
+	V.Local.sBin.Set(V.Local.sBin(1))
+	V.Local.sBin.RedimPreserve(0,0)
+F.Intrinsic.Control.EndIf
+
+Gui.FormBinTransfer.txtBin.Text(V.Local.sBin.UCase)
+V.Local.sBin.Set(V.Local.sBin.UCase)
+
+'getting parts for selected bin with a qty > 0
+F.Intrinsic.String.Build("Select rtrim(Bin)+rtrim(Part)+rtrim(Location)+rtrim(Heat)+rtrim(Serial_Number) as BinKey, Bin, Part, Location, Lot, Heat, Serial_Number, Quantity From V_Item_Master Where Ucase(Bin) = '{0}' and Quantity > 0 Order By Part",V.Local.sBin.Trim,V.Local.sSql)
+F.Intrinsic.Control.If(V.DataTable.TempBin.Exists,=,True)
+	F.Data.DataTable.Close("TempBin")
+F.Intrinsic.Control.EndIf
+F.Data.DataTable.CreateFromSQL("TempBin","con",V.Local.sSql,True)
+F.Data.DataTable.Merge("TempBin","Bin",False,2)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtBin_KeyPressEnter.End
+
+Program.Sub.cmdBin_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+'common bin browser
+F.Intrinsic.UI.Browser(150,"",V.Local.sRet)
+
+F.Intrinsic.Control.If(V.Local.sRet,<>,V.Ambient.Cancel)
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	Gui.FormBinTransfer.txtBin.Text(V.Local.sRet)
+	F.Intrinsic.Control.CallSub(txtBin_KeyPressEnter)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdBin_Click.End
+
+Program.Sub.cmdSubmit_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.i.Declare(Long)
+V.Local.iCount.Declare(Long)
+V.Local.sFilter.Declare(String)
+V.Local.sText.Declare(String)
+V.Local.sLine.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sFqn.Declare(String)
+V.Local.sStop.Declare(String)
+V.Local.sTemp.Declare(String)
+V.Local.fQty.Declare(Float)
+V.Local.sPart.Declare(String)
+
+F.Intrinsic.Control.BlockEvents
+'checking to make sure there are no blank bin
+F.Intrinsic.Control.If(V.DataView.Bin$Transfer!BlankBins.Exists,=,True)
+	F.Data.DataView.Close("Bin$Transfer","BlankBins")
+F.Intrinsic.Control.EndIf
+F.Data.DataView.Create("Bin$Transfer","BlankBins",22,"To_Bin = '' or To_Bin is null","")
+F.Intrinsic.Control.If(V.DataView.Bin$Transfer!BlankBins.RowCount--,>,-1)
+	F.Intrinsic.UI.Msgbox("A To Bin was left blank. Please select a To Bin for all Records.","Warning")
+	F.Intrinsic.Control.UnBlockEvents
+	F.Intrinsic.Variable.AddRV("ExitSub","True")
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+'taking the transfer data table and getting a list of distinct to bins
+F.Intrinsic.Control.If(V.DataTable.ToBin.Exists,=,True)
+	F.Data.DataTable.Close("ToBin")
+F.Intrinsic.Control.EndIf
+'getting a list of to bin and part so like bin an part can be placed on the same line for the bin transfer
+F.Data.DataView.ToDataTableDistinct("Bin","BinTransferView","ToBin","BinKey*!*Part*!*To_Bin",True)
+
+'checking if dataview is already created if so close it so it can get recreated.
+F.Intrinsic.Control.If(V.DataView.Bin$Transfer!ToBinTransfer.Exists,=,True)
+	F.Data.DataView.Close("Bin$Transfer","ToBinTransfer")
+F.Intrinsic.Control.EndIf
+F.Data.DataView.Create("Bin$Transfer","ToBinTransfer")
+
+F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.ToBin.RowCount--,1)
+	F.Intrinsic.String.Build("BinKey = '{0}' and To_Bin = '{1}' and Part = '{2}'",V.DataTable.ToBin(V.Local.i).BinKey!FieldValTrim,V.DataTable.ToBin(V.Local.i).To_Bin!FieldValTrim,V.DataTable.ToBin(V.Local.i).Part!FieldValTrim,V.Local.sFilter)
+	F.Data.DataView.SetFilter("Bin","ToBinTransfer",V.Local.sFilter)
+	V.Local.fQty.Set(0)
+	F.Intrinsic.Control.For(V.Local.iCount,0,V.DataView.Bin$Transfer!ToBinTransfer.RowCount--,1)
+		'adding qty if a bin part has been entered twice so a single line will be written to txt file.
+		F.Intrinsic.Math.Add(V.Local.fQty,V.DataView.Bin$Transfer!ToBinTransfer(V.Local.iCount).Quantity!FieldValFloat,V.Local.fQty)
+		F.Intrinsic.Control.If(V.Local.iCount,=,V.DataView.Bin$Transfer!ToBinTransfer.RowCount--)
+			F.Intrinsic.Control.If(V.Local.fQty,>,0)
+				F.Intrinsic.String.RPad(V.DataView.Bin$Transfer!ToBinTransfer(V.Local.iCount).Part!FieldValTrim," ",20,V.Local.sPart)
+				F.Intrinsic.String.Build("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}",V.Local.sPart,V.DataView.Bin$Transfer!ToBinTransfer(V.Local.iCount).Location!FieldValTrim,V.Local.fQty,V.DataView.Bin$Transfer!ToBinTransfer(V.Local.iCount).Bin!FieldValTrim,V.DataTable.ToBin(V.Local.i).To_Bin!FieldValTrim,V.DataView.Bin$Transfer!ToBinTransfer(V.Local.iCount).Lot!FieldValTrim,V.DataView.Bin$Transfer!ToBinTransfer(V.Local.iCount).Heat!FieldValTrim,V.DataView.Bin$Transfer!ToBinTransfer(V.Local.iCount).Serial_Number!FieldValTrim,"","",V.DataView.Bin$Transfer!ToBinTransfer(V.Local.iCount).Location!FieldValTrim,"Y",V.Caller.User,V.Ambient.Date.formatYYYYMMDD,V.Local.sTemp)
+				F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sText,V.Local.sTemp,V.Ambient.NewLine,V.Local.sText)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCount)
+	F.Intrinsic.String.Build("{0}{1}",V.Local.sLine,V.Local.sText,V.Local.sLine)
+	V.Local.sText.Set("")
+F.Intrinsic.Control.Next(V.Local.i)
+F.Intrinsic.Control.UnBlockEvents
+F.Intrinsic.Control.If(V.Local.sLine.Length,>,0)
+	'saving comma delimented file to be used by lot054up
+	F.Intrinsic.String.Build("W{0}{1}BIN2BINTRNS",V.Caller.CompanyCode,V.Caller.Terminal,V.Local.sFile)
+	F.Intrinsic.String.Build("{0}\{1}",V.Caller.FilesDir,V.Local.sFile,V.Local.sFqn)
+	F.Intrinsic.File.String2File(V.Local.sFqn,V.Local.sLine)
+	
+	'commenting this out they want to see the reports leaving this line of code in just in case at a later time they don't want to see the report.
+'	'theres a script on 16090 that checks to see if this file exists, if so it cancel the report from showing.
+'	F.Intrinsic.String.Build("{0}\{1}4552.stop",V.Caller.FilesDir,V.Caller.Terminal,V.Local.sStop)
+'	F.Intrinsic.File.String2File(V.Local.sStop,"Stop")
+	F.Intrinsic.Task.LaunchGSSSync("LOT054UP","-c",V.Local.sFile)	
+'	F.Intrinsic.File.DeleteFile(V.Local.sStop)
+F.Intrinsic.Control.EndIf
+
+F.Data.DataTable.DeleteRow("Bin")
+F.Data.DataTable.AcceptChanges("Bin")
+F.Data.DataTable.DeleteRow("Bin$Transfer")
+F.Data.DataTable.AcceptChanges("Bin$Transfer")
+
+'blocking the click event 
+F.Intrinsic.Control.BlockEvents
+Gui.FormBinTransfer.chkMoveAll.Value(0)
+F.Intrinsic.Control.UnBlockEvents
+
+F.Intrinsic.Control.CallSub(txtBin_KeyPressEnter)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdSubmit_Click.End
+
+Program.Sub.Set_Properties.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sSql.Declare(String)
+V.Local.sToBin.Declare(String)
+
+F.Data.Dictionary.ReturnAllPairs("Bin",V.Local.sToBin)
+F.Intrinsic.String.Split(V.Local.sToBin,"!*!",V.Local.sToBin)
+
+'creating empty datatables that will be use to display to the grid.  The program will merge information into these tables as needed.
+F.Intrinsic.String.Build("Select rtrim(Bin)+rtrim(Part)+rtrim(Location)+rtrim(Heat)+rtrim(Serial_Number) as BinKey, Bin, Part, Location, Lot, Heat, Serial_Number, Quantity, Quantity as Qty_Remaining From V_Item_Master Where Bin = '-11111' Order By Part","",V.Local.sSql)
+F.Data.DataTable.CreateFromSQL("Bin","con",V.Local.sSql,True)
+F.Data.DataTable.CreateFromSQL("BinTemp","con",V.Local.sSql,True)
+
+F.Intrinsic.String.Build("Select rtrim(Bin)+rtrim(Part)+rtrim(Location)+rtrim(Heat)+rtrim(Serial_Number) as BinKey, Bin, Part, Location, Lot, Heat, Serial_Number, '' as To_Bin, Quantity From V_Item_Master Where Bin = '-11111' Order By Part","",V.Local.sSql)
+F.Data.DataTable.CreateFromSQL("Bin$Transfer","con",V.Local.sSql,True)
+F.Data.DataTable.CreateFromSQL("BinTransferTemp","con",V.Local.sSql,True)
+
+'setting relationship
+F.Data.DataTable.AddRelation("Bin","BinKey","Bin$Transfer","BinKey","BinKey")
+
+'creating dataviews to add grid views to.  The $ messing up the addgridviewformdatatable function
+F.Data.DataView.Create("Bin","BinView")
+F.Data.DataView.Create("Bin$Transfer","BinTransferView")
+'setting properities
+Gui.FormBinTransfer.GsGridControlBin.AddGridviewFromDataview("Bin","Bin","BinView")
+Gui.FormBinTransfer.GsGridControlBin.AddGridviewFromDataview("BinTransfer","Bin","BinTransferView")
+
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","BinKey","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Bin","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","BinKey","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","BinKey","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Bin","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Bin","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Part","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Part","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Location","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Location","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Lot","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Lot","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Heat","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Heat","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Serial_Number","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Serial_Number","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Serial_Number","Caption","Serial Number")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Quantity","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Quantity","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Qty_Remaining","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Qty_Remaining","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Qty_Remaining","Caption","Qty Remaining")
+
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","BinKey","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Bin","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Part","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Location","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Lot","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Heat","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Serial_Number","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Quantity","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Qty_Remaining","TabStop",False)
+
+
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Bin","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Bin","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","BinKey","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","BinKey","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Bin","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Bin","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Part","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Part","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Location","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Location","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Lot","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Lot","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Heat","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Heat","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Serial_Number","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Serial_Number","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Quantity","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Quantity","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Qty_Remaining","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("Bin","Qty_Remaining","HeaderForeColor","White")
+
+Gui.FormBinTransfer.GsGridControlBin.SetGridviewProperty("Bin","Enableappearanceevenrow",False)
+Gui.FormBinTransfer.GsGridControlBin.SetGridviewProperty("Bin","Enableappearanceoddrow",True)
+Gui.FormBinTransfer.GsGridControlBin.SetGridviewProperty("Bin","Multiselectmode",1)
+Gui.FormBinTransfer.GsGridControlBin.SetGridviewProperty("Bin","EnterKeyNavigation","Horizontal")
+
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","BinKey","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Bin","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Part","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Location","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Lot","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Heat","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Serial_Number","Visible",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","BinKey","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","BinKey","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Bin","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Bin","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Part","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Part","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Location","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Location","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Lot","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Lot","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Heat","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Heat","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Serial_Number","ReadOnly",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Serial_Number","AllowEdit",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Serial_Number","Caption","Serial Number")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Quantity","ReadOnly",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Quantity","AllowEdit",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","To_Bin","ReadOnly",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","To_Bin","AllowEdit",True)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","To_Bin","Caption","To Bin")
+Gui.FormBinTransfer.GsGridControlBin.ColumnEdit("BinTransfer","To_Bin","Combobox",V.Local.sToBin)
+
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","BinKey","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Bin","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Part","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Location","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Lot","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Heat","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Serial_Number","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Quantity","TabStop",False)
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","To_Bin","TabStop",False)
+
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Bin","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Bin","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","BinKey","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","BinKey","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Part","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Part","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Location","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Location","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Lot","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Lot","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Heat","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Heat","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Serial_Number","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Serial_Number","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Quantity","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","Quantity","HeaderForeColor","White")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","To_Bin","HeaderBackColor","Green")
+Gui.FormBinTransfer.GsGridControlBin.SetColumnProperty("BinTransfer","To_Bin","HeaderForeColor","White")
+
+Gui.FormBinTransfer.GsGridControlBin.SetGridviewProperty("BinTransfer","Enableappearanceevenrow",False)
+Gui.FormBinTransfer.GsGridControlBin.SetGridviewProperty("BinTransfer","Enableappearanceoddrow",True)
+Gui.FormBinTransfer.GsGridControlBin.SetGridviewProperty("BinTransfer","Multiselectmode",1)
+Gui.FormBinTransfer.GsGridControlBin.SetGridviewProperty("BinTransfer","EnterKeyNavigation","Horizontal")
+
+Gui.FormBinTransfer.GsGridControlBin.MainView("Bin")
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Set_Properties.End
+
+Program.Sub.BinTransfer.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+
+F.Intrinsic.Control.UnBlockEvents
+'adding row to child datatable to so user can enter a qty and to bin
+F.Data.DataTable.AddRow("Bin$Transfer","BinKey",V.DataView.Bin!BinView(V.Global.iRow).BinKey!FieldValTrim,"Bin",V.DataView.Bin!BinView(V.Global.iRow).Bin!FieldValTrim,"Part",V.DataView.Bin!BinView(V.Global.iRow).Part!FieldValTrim,"Location",V.DataView.Bin!BinView(V.Global.iRow).Location!FieldValTrim,"Lot",V.DataView.Bin!BinView(V.Global.iRow).Lot!FieldValTrim,"Heat",V.DataView.Bin!BinView(V.Global.iRow).Heat!FieldValTrim,"Serial_Number",V.DataView.Bin!BinView(V.Global.iRow).Serial_Number!FieldValTrim,"Quantity",0)
+Gui.FormBinTransfer.GsGridControlBin.ExpandMasterRow("Bin",V.Global.iRow)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.BinTransfer.End
+
+Program.Sub.GsGridControlBin_CellValueChanged.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.fQty.Declare(Float)
+V.Local.iRow.Declare(Long)
+V.Local.sFilter.Declare(String)
+V.Local.fRemaining.Declare(Float)
+
+F.Intrinsic.Control.BlockEvents
+'calculating how much qty is remaining in the bin that is getting qty transfered from.  making sure user can't transfer more than the bin has
+Gui.FormBinTransfer.GsGridControlBin.GetFocusedGridview(V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,=,"TRANSFER")
+	F.Intrinsic.Control.If(V.Args.Column.UCase,=,"QUANTITY")
+		F.Intrinsic.String.Build("BinKey = '{0}'",V.DataView.Bin$Transfer!BinTransferView(V.Args.RowIndex).BinKey!FieldValTrim,V.Local.sFilter)
+		F.Data.DataView.Create("Bin","BinTemp",22,V.Local.sFilter,"")
+		F.Data.DataView.Create("Bin$Transfer","BINTRANSFERTemp",22,V.Local.sFilter,"")
+		F.Data.DataView.ToDataTable("Bin","BINTRANSFERTemp","BTemp",True)
+		F.Data.DataTable.AddExpressionColumn("BTemp","QtyT","Float","Sum(Quantity)")
+		
+		F.Intrinsic.Control.If(V.DataView.Bin!BinTemp(V.DataView.Bin!BinTemp.RowCount--).Quantity!FieldValFloat,>=,V.DataTable.BTemp(V.DataTable.bTemp.RowCount--).QtyT!FieldValFloat)
+			F.Intrinsic.Math.Sub(V.DataView.Bin!BinTemp(V.DataView.Bin!BinTemp.RowCount--).Quantity!FieldValFloat,V.DataTable.BTemp(V.DataTable.bTemp.RowCount--).QtyT!FieldValFloat,V.Local.fQty)
+			F.Data.DataView.SetValue("Bin","BinTemp",-1,"Qty_Remaining",V.Local.fQty)
+		F.Intrinsic.Control.Else
+			F.Data.DataView.SetValue("Bin$Transfer","BINTRANSFERTemp",V.Args.RowIndex,"Quantity",V.Global.fQty)
+		F.Intrinsic.Control.EndIf
+		F.Data.DataView.Close("Bin$Transfer","BINTRANSFERTemp")
+		F.Data.DataView.Close("Bin","BinTemp")
+		F.Data.DataTable.Close("BTemp")
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+Gui.FormBinTransfer.GsGridControlBin.GetCellValue("BINTRANSFER",8,V.Args.RowIndex,V.Global.fQty)
+
+F.Intrinsic.Control.UnBlockEvents
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.GsGridControlBin_CellValueChanged.End
+
+Program.Sub.GsGridControlBin_MouseCellEnter.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.fQty.Declare(Float)
+V.Local.iX.Declare(Long)
+V.Local.iY.Declare(Long)
+V.Local.iRet.Declare(Long,-1)
+
+'checking to see if bintransfer sub is in the call stack if so exit this sub dont need to update row
+F.Intrinsic.Control.IsInCallstack("BinTransfer",V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,>,0)
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.BlockEvents
+'getting qty of the cell before it gets changed. This is used if the program has to set the cell back to the orginal value.
+F.Intrinsic.Control.If(V.Args.GridViewName.UCase,=,"BINTRANSFER")
+	F.Intrinsic.Control.If(V.Args.Column,=,"8")		
+		Gui.FormBinTransfer.GsGridControlBin.GetCellValue("BINTRANSFER",8,V.Args.Row,V.Global.fQty)
+	F.Intrinsic.Control.EndIf
+	V.Global.iRow.Set(-1)
+F.Intrinsic.Control.Else
+	'getting the row index
+	V.Global.iRow.Set(V.Args.Row)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.UnBlockEvents
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.GsGridControlBin_MouseCellEnter.End
+
+Program.Sub.GsGridControlBin_KeyPressEnter.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.fQty.Declare(Float)
+V.Local.iRow.Declare(Long)
+
+F.Intrinsic.Control.BlockEvents
+F.Intrinsic.Control.If(V.Args.ColumnName.UCase,=,"TO_BIN","OR",V.Args.ColumnName.UCase,=,"QUANTITY")
+	'getting qty of the cell before it gets changed. This is used if the program has to set the cell back to the orginal value.
+	Gui.FormBinTransfer.GsGridControlBin.GetCellValue("BINTRANSFER",8,V.Args.RowIndex,V.Global.fQty)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.UnBlockEvents
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.GsGridControlBin_KeyPressEnter.End
+
+Program.Sub.GsGridControlBin_RowCellClick.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.fQty.Declare(Float)
+V.Local.iX.Declare(Long)
+V.Local.iY.Declare(Long)
+
+F.Intrinsic.Control.BlockEvents
+'getting qty of the cell before it gets changed. This is used if the program has to set the cell back to the orginal value.
+F.Intrinsic.Control.If(V.Global.iRow,<>,-1)
+	F.Intrinsic.Control.If(V.Args.Column.UCase,<>,"PART")
+		'attach menu to grid
+		F.Intrinsic.API.GetMousePosition(V.Local.iX,V.Local.iY)
+		Gui.FormBinTransfer..ContextMenuShow("BinTransfer",V.Local.iX,V.Local.iY)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.UnBlockEvents
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.GsGridControlBin_RowCellClick.End
+
+Program.Sub.cmdToBin_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+'common bin browser
+F.Intrinsic.UI.Browser(150,"",V.Local.sRet)
+
+F.Intrinsic.Control.If(V.Local.sRet,<>,V.Ambient.Cancel)
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	Gui.FormBinTransfer.txtToBin.Text(V.Local.sRet)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdToBin_Click.End
+
+Program.Sub.cmdAuto_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+
+F.Data.DataTable.SetValue("Bin$Transfer",-1,"To_Bin",V.Screen.FormBinTransfer!txtToBin.Text)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdAuto_Click.End
+
+Program.Sub.chkMoveAll_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sSql.Declare(String)
+V.Local.i.Declare(Long)
+
+F.Intrinsic.Control.If(V.Screen.FormBinTransfer!chkMoveAll.Value,=,1)
+	'Moving what has already been selected to temp datable incase the user unselects the check box
+	F.Data.DataTable.DeleteRow("BinTemp")
+	F.Data.DataTable.DeleteRow("BinTransferTemp")
+	F.Data.DataTable.AcceptChanges("BinTemp")
+	F.Data.DataTable.AcceptChanges("BinTransferTemp")
+	F.Data.DataTable.Merge("Bin","BinTemp",False,2)
+	F.Data.DataTable.Merge("Bin$Transfer","BinTransferTemp",False,2)
+	'populating child grid
+	F.Data.DataTable.DeleteRow("Bin$Transfer")
+	F.Data.DataTable.AcceptChanges("Bin$Transfer")
+	F.Intrinsic.String.Build("Select rtrim(Bin)+rtrim(Part)+rtrim(Location)+rtrim(Heat)+rtrim(Serial_Number) as BinKey, Bin, Part, Location, Lot, Heat, Serial_Number, '' as To_Bin, Quantity From V_Item_Master Where Bin = '{0}' Order By Part",V.Screen.FormBinTransfer!txtBin.Text,V.Local.sSql)
+	F.Data.DataTable.CreateFromSQL("BinTranUpdate","con",v.Local.sSql,True)
+	F.Data.DataTable.Merge("BinTranUpdate","Bin$Transfer",False,2)
+	F.Data.DataTable.Close("BinTranUpdate")
+	F.Data.DataTable.SetValue("Bin",-1,"Qty_Remaining",0)
+	F.Data.DataTable.SetValue("Bin$Transfer",-1,"To_Bin",V.Screen.FormBinTransfer!txtToBin.Text)
+F.Intrinsic.Control.Else
+	'Moving what has already been selected from temp datable 
+	F.Data.DataTable.DeleteRow("Bin")
+	F.Data.DataTable.DeleteRow("Bin$Transfer")
+	F.Data.DataTable.AcceptChanges("Bin")
+	F.Data.DataTable.AcceptChanges("Bin$Transfer")
+	F.Data.DataTable.Merge("BinTemp","Bin",False,2)
+	F.Data.DataTable.Merge("BinTransferTemp","Bin$Transfer",False,2)
+F.Intrinsic.Control.EndIf
+
+Gui.FormBinTransfer.GsGridControlBin.MainView("Bin")
+
+Gui.FormBinTransfer..Enabled(False)
+Gui.FormBinTransfer.GsGridControlBin.SuspendLayout()
+F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.Bin.RowCount--,1)
+	Gui.FormBinTransfer.GsGridControlBin.ExpandMasterRow("Bin",V.Local.i)
+F.Intrinsic.Control.Next(V.Local.i)
+Gui.FormBinTransfer.GsGridControlBin.ResumeLayout()
+Gui.FormBinTransfer..Enabled(True)
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_447_Mass_Bin_Transfer.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormBinTransfer_Unload)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.chkMoveAll_Click.End
+
+
+
+
+
+
