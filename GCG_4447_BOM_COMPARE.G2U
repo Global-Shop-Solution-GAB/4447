@@ -1,0 +1,373 @@
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'by Josh Withrow
+'for LoadKing
+'
+'IF THIS IS BLOWING UP BECAUSE THEY ADDED NEW COLUMNS to the equation, try deleting the table.  This script 
+'will recreate it with the field list in the XML file.  Just try it (back up the data file first!)
+'
+'Hook: 50310
+
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+v.Local.sSql.Declare(String)
+v.Local.i.Declare(Long)
+v.Local.ii.Declare(Long)
+V.Local.sTitles.Declare(String)
+V.Local.sRecordTitles.Declare(String)
+V.Local.sRecordValues.Declare(String)
+V.Local.sRecordTitleValuePairs.Declare(String)
+V.Local.iDupes.Declare(Long)
+v.Local.sTemp.Declare(String)
+v.Local.sRow.Declare(String)
+v.Local.iRows.Declare(Long)
+v.Local.iCustom.Declare(Long)
+v.Local.bTableExists.Declare(Boolean)
+v.Local.sTableName.Declare(String, "GAB_BOM_CUST_FIELDS")
+V.Local.sTitleName.Declare(String)
+
+'NEW variables added 1/20/2018 SFF
+v.Local.sRowTemp.Declare(String)
+v.Local.bCheck.Declare(Boolean)
+v.Local.iLevel.Declare(Long)
+v.Local.sParent.Declare(String)
+v.Local.iParentPos.Declare(Long,-1)
+v.Local.iLevelPos.Declare(Long,-1)
+v.Local.iQtyPos.Declare(Long,-1)
+v.Local.iRet.Declare(Float)
+v.Local.sDataTypes.Declare(String)
+v.Local.sPhsTemp.Declare(String)
+v.Local.sFilter.Declare(String)
+v.Local.sFinalBDF.Declare(String)
+v.Local.sParents.Declare(String)
+v.Local.sDeletePart.Declare(String)
+v.Local.sDeleteRev.Declare(String)
+
+
+'if it is the post hook, we are going to go through each part and look at 
+'a designated folder where PDF packets are created for the entire assembly
+'this will search for Part@Rev and it will extract/merge like pages where that part@rev is embedded in the PDf. 
+
+f.Intrinsic.Control.If(v.Caller.Hook,=,50320)
+	'call another sub to load BDF of the actual BOM then parse it. 
+	f.Intrinsic.Control.CallSub(GetPDF)
+	
+f.Intrinsic.Control.EndIf
+
+Function.Intrinsic.Control.If(v.Caller.Hook,=,50310)
+	F.ODBC.Connection!conX.OpenConnection(v.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass,72000)	
+'	F.ODBC.Connection!conX.OpenConnection("GLOBAL_TST","Master","master",72000)	
+	
+	F.Intrinsic.BDF.Load("Orig","Main-PrePopulate-bdf")
+	f.Intrinsic.BDF.Clone("Orig","Copy")
+	
+	F.Intrinsic.BDF.ReadColumnTitle("Orig",V.Local.sTitles)
+	
+	'store column titles in data table to use later. SFF 01302018
+	f.data.DataTable.CreateFromString("Pos",v.Local.sTitles,"column","string",v.Ambient.NewLine,"*!*",true)
+	
+	'get parent position in the BFG columns
+	f.Data.DataTable.Select("Pos","column = 'parent'",v.Local.sTemp)
+		Function.Intrinsic.Control.If(v.Local.sTemp,<>,"***NORETURN***")
+			v.Local.iParentPos.Set(v.Local.sTemp.Long)
+	f.Intrinsic.Control.Else
+		f.Intrinsic.UI.Msgbox("xml file is missing 'parent' column, do NOT import BOM")
+		f.Intrinsic.Control.End
+	f.Intrinsic.Control.EndIf
+	
+	'get Quantity position in the BFG columns
+	f.Data.DataTable.Select("Pos","column = 'quantity'",v.Local.sTemp)
+		Function.Intrinsic.Control.If(v.Local.sTemp,<>,"***NORETURN***")
+			v.Local.iQtyPos.Set(v.Local.sTemp.Long)
+	f.Intrinsic.Control.Else
+		f.Intrinsic.UI.Msgbox("xml file is missing 'quantity' column, do NOT import BOM")
+		f.Intrinsic.Control.End
+	f.Intrinsic.Control.EndIf
+	
+	'get the level position from bdf columns
+	f.Data.DataTable.Select("Pos","column = 'level'",v.Local.sTemp)
+	Function.Intrinsic.Control.If(v.Local.sTemp,<>,"***NORETURN***")
+		v.Local.iLevelPos.Set(v.Local.sTemp.Long)
+	f.Intrinsic.Control.Else
+		f.Intrinsic.UI.Msgbox("xml file is missing 'level' column, do NOT import BOM")
+		f.Intrinsic.Control.End
+	f.Intrinsic.Control.EndIf
+	
+	'split titles for creating table
+	Function.Intrinsic.String.Split(V.Local.sTitles,"*!*",V.Local.sTitles)
+	
+	'Check to see if table exists to store custom columns...  if not, create it...
+	F.ODBC.Connection!conX.TableExists(V.Local.sTableName,V.Local.bTableExists)
+	Function.Intrinsic.Control.If(V.Local.bTableExists,=,False)
+		Function.Intrinsic.String.Concat("CREATE TABLE ", V.Local.sTableName, " (",V.Local.sSql)
+		F.Intrinsic.Control.For(V.Local.i,0,V.Local.sTitles.UBound,1)
+			V.Local.sTitleName.Set("")
+			Function.Intrinsic.Control.If(V.Local.i,>,0)
+				Function.Intrinsic.String.Concat(V.Local.sSql,", ",V.Local.sSql)
+			Function.Intrinsic.Control.EndIf
+			F.Intrinsic.String.Replace(V.Local.sTitles(V.Local.i)," ","",V.Local.sTitleName)
+			F.Intrinsic.String.Replace(V.Local.sTitleName,".","",V.Local.sTitleName)
+			F.Intrinsic.String.Left(V.Local.sTitleName,16,V.Local.sTitleName)
+			Function.Intrinsic.String.Concat(V.Local.sSql,""",V.Local.sTitleName,"" CHAR(30)",V.Local.sSql)
+		F.Intrinsic.Control.Next(V.Local.i)
+		Function.Intrinsic.String.Concat(V.Local.sSql,")",V.Local.sSql)
+
+		F.ODBC.Connection!conX.Execute(V.Local.sSql)
+		V.Local.sSql.Set("")
+	Function.Intrinsic.Control.EndIf
+	
+	'Insert rows into custom table...  row by row...
+	F.Intrinsic.BDF.ReadRowCount("Orig",V.Local.iRows)
+	
+	V.Local.i.Set(0)
+	F.Intrinsic.Math.Sub(V.Local.iRows,1,V.Local.iRows)
+	
+	'first build string to load datatable for phantom parts.
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.iRows,1)
+		F.Intrinsic.BDF.ReadRow("Orig",V.Local.i,V.Local.sRow)
+		F.Intrinsic.String.Split(V.Local.sRow,"|~|",V.Local.sTemp)
+		
+		f.Intrinsic.String.IsInString(v.Local.sTemp(0).ucase,"PHANTOM",true,v.Local.bCheck)
+		f.Intrinsic.Control.If(v.Local.bCheck,=,False)
+			'also check for PHT if the PHANTOM check is false, some engineers are using this abreviation
+			f.Intrinsic.String.IsInString(v.Local.sTemp(0).ucase,"PHT",true,v.Local.bCheck)
+		f.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+		
+			f.Intrinsic.Control.If(v.Local.sPhsTemp.Trim,<>,"")
+				f.Intrinsic.String.Build("{0}{1}{2}",v.Local.sPhsTemp.Trim,v.Ambient.NewLine,v.Local.sRow,v.Local.sPhsTemp)
+			f.Intrinsic.Control.Else
+				v.Local.sPhsTemp.Set(v.Local.sRow.Trim)
+			f.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+
+	'now load datatable from string
+	f.Intrinsic.Control.If(v.Local.sPhsTemp.Trim,<>,"")
+		'build simple string to pass in createfromstring function below instead of passing static data types.
+		f.Intrinsic.Control.For(v.Local.i,v.Local.sTitles.LBound,v.Local.sTitles.UBound,1)
+			f.Intrinsic.Control.If(v.Local.sDataTypes.Trim,=,"")
+				v.Local.sDataTypes.Set("String")
+			f.Intrinsic.Control.Else
+				f.Intrinsic.Control.If(v.Local.sTitles(v.Local.i).ucase,=,"QUANTITY","OR",v.Local.sTitles(v.Local.i).ucase,=,"SEQUENCE")
+					f.Intrinsic.String.Build("{0}*!*{1}",v.Local.sDataTypes,"Float",v.Local.sDataTypes)
+				f.Intrinsic.Control.Else
+					f.Intrinsic.String.Build("{0}*!*{1}",v.Local.sDataTypes,"String",v.Local.sDataTypes)
+				f.Intrinsic.Control.EndIf
+				
+			f.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.Next(v.Local.i)
+		'now create data table
+		f.Intrinsic.String.Join(v.Local.sTitles,"*!*",v.Local.sTitles)
+		f.Data.DataTable.CreateFromString("Phantoms",v.Local.sPhsTemp,v.Local.sTitles,v.Local.sDataTypes,"|~|",v.Ambient.NewLine,true)
+		f.Data.DataView.Create("Phantoms","PHView")
+	f.Intrinsic.Control.EndIf
+	
+	're-split titles.
+	f.Intrinsic.String.Split(v.Local.sTitles,"*!*",v.Local.sTitles)
+	V.Local.i.Set(0)
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.iRows,1)
+		F.Intrinsic.BDF.ReadRow("Orig",V.Local.i,V.Local.sRow)
+		F.Intrinsic.String.Split(V.Local.sRow,"|~|",V.Local.sTemp)
+		
+		'SFF 01302018 if first row, then it is the Top Level. store Parent in variable
+		f.Intrinsic.Control.If(v.Local.i,=,0)
+			v.Local.sParent.Set(v.Local.sTemp(0))
+		f.Intrinsic.Control.EndIf
+		v.Local.sDeletePart.Set(v.Local.sTemp(0))
+		v.Local.sDeleteRev.Set(v.Local.sTemp(1))
+		
+		V.Local.ii.Set(0)
+		V.Local.sSql.Set("")
+		V.Local.sRecordTitles.Set("")
+		V.Local.sRecordValues.Set("")
+		V.Local.sRecordTitleValuePairs.Set("")
+		
+		F.Intrinsic.Control.For(V.Local.ii,0,V.Local.sTitles.UBound,1)
+			'Read Data
+			Function.Intrinsic.Control.If(V.Local.ii,>,0)
+				Function.Intrinsic.String.Concat(V.Local.sRecordTitles,", ",V.Local.sRecordTitles)
+				Function.Intrinsic.String.Concat(V.Local.sRecordValues,", ",V.Local.sRecordValues)
+				Function.Intrinsic.String.Concat(V.Local.sRecordTitleValuePairs," and ",V.Local.sRecordTitleValuePairs)
+			Function.Intrinsic.Control.EndIf
+			
+			F.Intrinsic.String.Replace(V.Local.sTitles(V.Local.ii)," ","",V.Local.sTitleName)
+			F.Intrinsic.String.Replace(V.Local.sTitleName,".","",V.Local.sTitleName)
+			F.Intrinsic.String.Left(V.Local.sTitleName,16,V.Local.sTitleName)
+			
+			Function.Intrinsic.String.Concat(V.Local.sRecordTitles,""",V.Local.sTitleName,""",V.Local.sRecordTitles)
+			Function.Intrinsic.String.Concat(V.Local.sRecordValues,"'",V.Local.sTemp(V.Local.ii),"'",V.Local.sRecordValues)
+			Function.Intrinsic.String.Concat(V.Local.sRecordTitleValuePairs,""",V.Local.sTitleName,""='",V.Local.sTemp(V.Local.ii),"'",V.Local.sRecordTitleValuePairs)
+		F.Intrinsic.Control.Next(V.Local.ii)
+
+
+		'I am switching it to only use the PartNo and Revivsion, commenting out the below that used all columns in the where clause
+'		f.Intrinsic.String.Split(v.Local.srecordvalues,",",v.Local.sTemp)
+		f.Intrinsic.String.Build("PartNo = '{0}' and Revision = '{1}'",v.Local.sDeletePart.trim,v.Local.sDeleteRev.trim,v.Local.sTemp)
+		F.Intrinsic.String.Build("DELETE FROM {0} WHERE {1}",V.Local.sTableName,v.Local.sTemp,V.Local.sSql)
+
+		
+		F.ODBC.Connection!conX.Execute(V.Local.sSql)
+		
+		'using the query above instead of this, only need PartNo and Revision, it was not working when passing all columns.
+		'Look for and remove dupes (if found).  Matches on EVERY FIELD.
+'		F.Intrinsic.String.Build("DELETE FROM {0} WHERE {1}",V.Local.sTableName,V.Local.sRecordTitleValuePairs,V.Local.sSql)
+'		F.ODBC.Connection!conX.Execute(V.Local.sSql)
+	
+		
+		'Insert records...
+		F.Intrinsic.String.Build("INSERT INTO {0} ({1}) VALUES ({2})",V.Local.sTableName,V.Local.sRecordTitles,V.Local.sRecordValues,V.Local.sSql)
+		
+		
+		F.ODBC.Connection!conX.Execute(V.Local.sSql)
+		
+		'SFF - taking this project into Custom, we are adding in rules to restructure the BDF, taking out phantoms and changing Levels of Parts that are underneath phantoms.
+		'loadking does NOT actually use phantoms in GSS, Solidworks has to export them this way so we need to rebuild.
+		
+		're-split the row from BDF and check for phantom and change levels/parents of parts under phantom
+		f.Intrinsic.String.Split(v.Local.sRow,"|~|",v.Local.sRowTemp)
+		F.Intrinsic.Control.If(V.DataTable.Phantoms.RowCount--,<>,-1)
+			'Check the parent of each row, if PHANTOM is within the Parent Field String, then Change parent and Level
+			f.Intrinsic.String.IsInString(v.Local.sRowTemp(v.Local.iParentPos).ucase,"PHANTOM",true,v.Local.bCheck)
+			f.Intrinsic.Control.If(v.Local.bCheck,=,False)
+				'also check for PHT if the PHANTOM check is false, some engineers are using this abreviation
+				f.Intrinsic.String.IsInString(v.Local.sRowTemp(v.Local.iParentPos).ucase,"PHT",true,v.Local.bCheck)
+			f.Intrinsic.Control.EndIf
+			f.Intrinsic.Control.If(v.Local.bCheck,=,True)
+				f.Intrinsic.String.Build("PartNo = '{0}'",v.Local.sRowTemp(v.Local.iParentPos).trim,v.Local.sFilter)
+				f.Data.DataView.SetFilter("Phantoms","PHView",v.Local.sFilter)
+				
+				'move child part in place of phantom
+				f.Intrinsic.Control.If(Variable.DataView.Phantoms!PHView.RowCount,>,0)
+					'multiply Phantom Qty * child first
+					f.Intrinsic.Math.Mult(Variable.DataView.Phantoms!PHView(0).Quantity!FieldValFloat,v.Local.sRowTemp(v.Local.iQtyPos).float,v.Local.iRet)
+					v.Local.sRowTemp(v.Local.iQtyPos).Set(v.Local.iRet)
+					'change to parent if match found
+					v.Local.sRowTemp(v.Local.iParentPos).Set(v.Local.sParent.Trim)
+					'set level
+					v.Local.iLevel.Set(Variable.DataView.Phantoms!PHView(0).Level!FieldValFloat)
+					v.Local.sRowTemp(v.Local.iLevelPos).Set(v.Local.iLevel.String)
+
+				f.Intrinsic.Control.EndIf
+				
+				
+				'put back in srow(i) for bdf before writing to clone
+				f.Intrinsic.String.Join(v.Local.sRowTemp,"|~|",v.Local.sRow)
+			f.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.EndIf
+		
+		'check Part to make sure we do NOT write phantoms to the final BDF loaded in BOM Compare
+		f.Intrinsic.String.IsInString(v.Local.sRowTemp(0).ucase,"PHANTOM",true,v.Local.bCheck)
+		f.Intrinsic.Control.If(v.Local.bCheck,=,False)
+			'also check for PHT if the PHANTOM check is false, some engineers are using this abreviation
+			f.Intrinsic.String.IsInString(v.Local.sRowTemp(0).ucase,"PHT",true,v.Local.bCheck)
+		f.Intrinsic.Control.EndIf
+		'Only write rows to the Copy of bdf that are NOT phantoms.
+		f.Intrinsic.Control.If(v.Local.bCheck,<>,true)
+			f.Intrinsic.Control.If(v.Local.sFinalBDF.Trim,<>,"")
+				f.Intrinsic.String.Build("{0}{1}{2}",v.Local.sFinalBDF.Trim,v.Ambient.NewLine,v.Local.sRow.Trim,v.Local.sFinalBDF)
+			f.Intrinsic.Control.Else
+				v.Local.sFinalBDF.Set(v.Local.sRow)
+			f.Intrinsic.Control.EndIf
+		f.Intrinsic.Control.EndIf
+		
+			
+	F.Intrinsic.Control.Next(v.Local.i)
+	
+	'now we need to combine Like Items under each parent.
+	f.Intrinsic.Control.If(v.Local.sFinalBDF.Trim,<>,"")
+		f.Intrinsic.String.Join(v.Local.sTitles,"*!*",v.Local.sTitles)
+		f.Data.DataTable.CreateFromString("BDF",v.Local.sFinalBDF,v.Local.sTitles,v.Local.sDataTypes,"|~|",v.Ambient.NewLine,true)
+		
+		'empty datatable to add to later in the sub
+		f.Data.DataTable.CreateFromString("BDFClone",v.Local.sFinalBDF,v.Local.sTitles,v.Local.sDataTypes,"|~|",v.Ambient.NewLine,true)
+		F.Data.DataTable.DeleteRow("BDFClone")
+		F.Data.DataTable.AcceptChanges("BDFClone")
+		f.Data.DataView.Create("BDF","BDFView")
+
+		
+		'now make a distinct datatable
+		Function.Data.DataView.ToDataTableDistinct("BDF","BDFView","DistBDF","PartNo*!*Parent*!*Level",true)
+		
+		
+		'go through distinct datatable and set filter on the BDF datatable based on Part & Level
+		
+				
+		V.Local.fQty.Declare(Float)	
+		f.Intrinsic.Control.For(v.Local.i,0,v.DataTable.DistBDF.RowCount--,1)
+			f.Intrinsic.String.Build("PartNo = '{0}' and Level = '{1}' and [Parent] = '{2}'",v.DataTable.DistBDF(v.Local.i).PartNo!FieldValTrim,v.DataTable.DistBDF(v.Local.i).Level!Fieldvaltrim,v.DataTable.DistBDF(v.Local.i).Parent!Fieldvaltrim,v.Local.sFilter)
+			
+			f.Data.DataView.SetFilter("BDF","BDFView",v.Local.sFilter)
+			F.Data.DataView.ToDataTable("BDF","BDFView","BDFTemp",True)
+			f.Data.DataTable.AddExpressionColumn("BDFTemp","SumofQty","Float","Sum(Quantity)")
+			V.Local.fQty.Set(V.DataTable.BDFTemp(V.DataTable.BDFTemp.RowCount--).SumofQty!FieldValFloat)
+			F.Data.DataTable.SetValue("BDFTemp",0,"QUANTITY",V.Local.fQty)
+			F.Intrinsic.Control.For(V.Local.iRows,V.DataTable.BDFTemp.RowCount--,1,-1)
+				F.Data.DataTable.DeleteRow("BDFTEMP",V.Local.iRows)
+			F.Intrinsic.Control.Next(V.Local.iRows)
+			F.Data.DataTable.AcceptChanges("BDFTEMP")
+			F.Data.DataTable.Merge("BDFTemp","BDFClone",False,2)
+			F.Data.DataTable.SetValue("BDFClone",V.DataTable.BDFClone.RowCount--,"QUANTITY",V.DataTable.BDFTemp(V.DataTable.BDFTemp.RowCount--).SumofQty!FieldValFloat)
+			F.Data.DataTable.Close("BDFTemp")
+	
+		f.Intrinsic.Control.Next(v.Local.i)
+	f.Intrinsic.Control.EndIf
+	
+	f.Data.DataView.Create("BDFClone","BDFFinal")
+
+	f.Data.DataView.SetSort("BDFClone","BDFFinal","Level ASC,PartNo ASC, Sequence ASC")
+	f.Data.DataView.ToString("BDFClone","BDFFinal","|~|",v.Ambient.NewLine,v.Local.sTemp)
+	f.Intrinsic.String.Split(v.Local.sTemp,v.Ambient.NewLine,v.Local.sTemp)
+	'loop through final data and re-sequence it.
+	f.Intrinsic.Control.For(v.Local.i,v.Local.sTemp.LBound,v.Local.sTemp.UBound,1)
+		
+		
+		f.Intrinsic.BDF.WriteRow("Copy",v.Local.sTemp(v.Local.i).trim)
+	f.Intrinsic.Control.Next(v.Local.i)
+
+	F.Intrinsic.BDF.save("Copy","Main-PrePopulate-bdf")
+	
+Function.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+
+
+	Function.Intrinsic.String.Concat("Project: GCG_4447_BOM_COMPARE",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.GetPDF.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'get the top level parent part then search for PDF file. 
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: Project",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+Program.Sub.GetPDF.End
+
+Program.Sub.Comments.Start
+${$0$}$GCG_4447_BOM_COMPARE$}$SUPERVSR$}$5/2/2017 11:11:24 AM$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$Loads BDF and for every part, it queries for real inventory part based on description and swaps part out in BDF.
+
+
+Program.Sub.Comments.End
