@@ -1,0 +1,347 @@
+Program.Sub.ScreenSU.Start
+Gui.F_LabelView..Create
+Gui.F_LabelView..Caption("Current Eurosoft Label Data")
+Gui.F_LabelView..Size(15360,10695)
+Gui.F_LabelView..MinX(0)
+Gui.F_LabelView..MinY(0)
+Gui.F_LabelView..Position(0,0)
+Gui.F_LabelView..BackColor(-2147483633)
+Gui.F_LabelView..MousePointer(0)
+Gui.F_LabelView..Event(UnLoad,Unload)
+Gui.F_LabelView.GSGCLabelGrid.Create(GsGridControl)
+Gui.F_LabelView.GSGCLabelGrid.Size(15015,9180)
+Gui.F_LabelView.GSGCLabelGrid.Position(105,885)
+Gui.F_LabelView.txtPart_No.Create(TextBox,"",True,2610,300,0,105,435,True,0,"Arial",8,-2147483643,1)
+Gui.F_LabelView.txtPart_No.Locked(True)
+Gui.F_LabelView.lblPart_No.Create(Label,"Part Number",True,1935,255,0,105,210,True,0,"Arial",8,-2147483633,0)
+Gui.F_LabelView.txtRev.Create(TextBox,"",True,840,300,0,2775,435,True,0,"Arial",8,-2147483643,1)
+Gui.F_LabelView.txtRev.Locked(True)
+Gui.F_LabelView.lblRev.Create(Label,"Rev",True,795,255,0,2775,210,True,0,"Arial",8,-2147483633,0)
+Gui.F_LabelView.chkAll_Parts.Create(CheckBox)
+Gui.F_LabelView.chkAll_Parts.Size(2730,360)
+Gui.F_LabelView.chkAll_Parts.Position(3735,405)
+Gui.F_LabelView.chkAll_Parts.Caption("Show All Parts")
+Gui.F_LabelView.chkAll_Parts.Event(Click,chkAll_Parts_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+f.Intrinsic.Control.Try
+
+f.ODBC.Connection!Con.OpenConnection(v.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass)
+
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+	F.Intrinsic.Control.Case(10120)
+		V.Passed.000069.Set("Label Data View")
+		
+	F.Intrinsic.Control.Case(10220)
+		Gui.F_LabelView.GSGCLabelGrid.Anchor(15)
+		
+		'setting part no and rev to text boxes
+		Gui.F_LabelView.txtPart_No.Text(V.Passed.000007)
+		Gui.F_LabelView.txtRev.Text(V.Passed.000008)
+		
+		'Load DT from GCG_4447_LABLE_DATA
+		f.Data.DataTable.CreateFromSQL("LabelDT","Con","SELECT DISTINCT * FROM GCG_4447_LABEL_DATA WHERE INSTANCE = '00' ",True)
+		
+		f.Data.DataView.Create("LabelDT","LabelView",22,"","JOB ASC, SUFFIX ASC")
+		
+		'They can't edit anything. It's just to be looked at.
+		f.Intrinsic.Control.CallSub(PopulateGrid)
+		
+		'applying filter to the grid
+		F.Intrinsic.Control.CallSub(Set_Filter)
+		
+		GUi.F_LabelView.chkAll_Parts.Value(0)
+		
+		Gui.F_LabelView..Show
+		
+	F.Intrinsic.Control.CaseElse	
+		'Load DT from GCG_4447_LABLE_DATA
+		f.Data.DataTable.CreateFromSQL("LabelDT","Con","SELECT DISTINCT * FROM GCG_4447_LABEL_DATA WHERE INSTANCE = '00' ",True)
+
+		f.Data.DataView.Create("LabelDT","LabelView",22,"","JOB ASC, SUFFIX ASC")
+		
+		'Populate the whole Label_Data table and show it on the screen.
+		'They can't edit anything. It's just to be looked at.
+		f.Intrinsic.Control.CallSub(PopulateGrid)
+		
+		'applying filter to the grid
+		F.Intrinsic.Control.CallSub(Set_Filter)
+
+		Gui.F_LabelView.GSGCLabelGrid.Anchor(15)
+		Gui.F_LabelView.txtPart_No.Visible(False)
+		Gui.F_LabelView.txtRev.Visible(False)
+		Gui.F_LabelView.chkAll_Parts.Visible(False)
+		Gui.F_LabelView.lblPart_No.Visible(False)
+		Gui.F_LabelView.lblRev.Visible(False)
+		GUi.F_LabelView.chkAll_Parts.Value(1)
+		
+		Gui.F_LabelView..Show
+		
+F.Intrinsic.Control.EndSelect
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(TryCatch,"Sub",V.Ambient.CurrentSubroutine,"Error",V.Ambient.ErrorNumber,"Desc",V.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.TryCatch.Start
+v.Local.sError.Declare(String)
+Function.Intrinsic.String.Concat("Project: GCG_4447_SN_To_GSS_IssueMaterial.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",v.Args.Sub,V.Ambient.NewLine,"Error Occurred ",V.Args.Error," with description ",v.Args.Desc,V.Local.sError)
+f.Intrinsic.UI.Msgbox(v.Local.sError,"GAB Error")
+f.Intrinsic.Control.CallSub(Unload)
+Program.Sub.TryCatch.End
+
+Program.Sub.Unload.Start
+F.Intrinsic.Control.Try
+V.Local.sReturn.Declare(String)
+V.Local.sFile.Declare(String)
+
+F.Intrinsic.String.Build("{0}\{1}4447_Label_View.txt",V.Caller.GasDir,V.Caller.User,V.Local.sFile)
+
+Gui.F_LabelView.GSGCLabelGrid.Serialize("LabelGrid",V.Local.sReturn)
+
+F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sReturn)
+
+f.ODBC.Connection!Con.Close
+f.Intrinsic.Control.End
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.End
+f.Intrinsic.Control.EndTry
+Program.Sub.Unload.End
+
+Program.Sub.PopulateGrid.Start
+f.Intrinsic.Control.Try
+V.Local.sFile.Declare(String)
+V.Local.bRet.Declare(Boolean,False)
+V.Local.sReturn.Declare(String)
+
+Gui.F_LabelView.GSGCLabelGrid.AddGridviewFromDataview("LabelGrid","LabelDT","LabelView")
+
+'Make almost everything Visible False until we find out the ones they want to show by default.
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","JOB","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SUFFIX","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","INSTANCE","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PART","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_JOB","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_SUFFIX","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_PART","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","DESCRIPTION","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","RUN_QTY","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTAL_WO_QTY","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","ORDER_NO","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","ORDER_LINE","Visible",True)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_DESC","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_QTY","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_UM","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTALLENGTH","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTALWIDTH","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","GRAINDIR","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBTOPSIDE","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBBOTTOMSIDE","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBLEFTSIDE","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBRIGHTSIDE","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ1","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO1","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG1","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ1_BC","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ2","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO2","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG2","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ2_BC","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ3","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO3","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG3","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ3_BC","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ4","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO4","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG4","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ4_BC","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ5","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO5","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG5","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ5_BC","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ6","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO6","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG6","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ6_BC","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ7","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO7","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG7","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ7_BC","Visible",False)
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","IMAGE_PATH","Visible",False)
+
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","JOB","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SUFFIX","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","INSTANCE","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PART","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_JOB","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_SUFFIX","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_PART","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","DESCRIPTION","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","RUN_QTY","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTAL_WO_QTY","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","ORDER_NO","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","ORDER_LINE","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_DESC","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_QTY","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_UM","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTALLENGTH","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTALWIDTH","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","GRAINDIR","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBTOPSIDE","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBBOTTOMSIDE","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBLEFTSIDE","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBRIGHTSIDE","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ1","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO1","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG1","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ1_BC","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ2","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO2","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG2","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ2_BC","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ3","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO3","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG3","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ3_BC","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ4","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO4","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG4","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ4_BC","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ5","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO5","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG5","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ5_BC","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ6","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO6","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG6","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ6_BC","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ7","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO7","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG7","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ7_BC","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","IMAGE_PATH","HeaderBackColor","Green")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","JSSI","HeaderBackColor","Green")
+
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","JOB","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SUFFIX","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","INSTANCE","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PART","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_JOB","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_SUFFIX","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","PARENT_PART","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","DESCRIPTION","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","RUN_QTY","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTAL_WO_QTY","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","ORDER_NO","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","ORDER_LINE","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_DESC","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_QTY","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","MATERIAL_UM","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTALLENGTH","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","TOTALWIDTH","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","GRAINDIR","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBTOPSIDE","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBBOTTOMSIDE","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBLEFTSIDE","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","EBRIGHTSIDE","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ1","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO1","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG1","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ1_BC","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ2","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO2","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG2","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ2_BC","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ3","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO3","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG3","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ3_BC","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ4","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO4","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG4","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ4_BC","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ5","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO5","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG5","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ5_BC","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ6","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO6","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG6","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ6_BC","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ7","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","LMO7","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","WKG7","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","SEQ7_BC","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","IMAGE_PATH","HeaderForeColor","White")
+Gui.F_LabelView.GSGCLabelGrid.SetColumnProperty("LabelGrid","JSSI","HeaderForeColor","White")
+
+Gui.F_LabelView.GSGCLabelGrid.SetGridviewProperty("LabelGrid","EnableAppearanceEvenRow",True)
+Gui.F_LabelView.GSGCLabelGrid.SetGridviewProperty("LabelGrid","ShowGroupPanel",True)
+
+F.Intrinsic.String.Build("{0}\{1}4447_Label_View.txt",V.Caller.GasDir,V.Caller.User,V.Local.sFile)
+
+F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bRet)
+F.Intrinsic.Control.If(V.Local.bRet,=,True)
+	F.Intrinsic.File.File2String(V.Local.sFile,V.Local.sReturn)
+	Gui.F_LabelView.GSGCLabelGrid.Deserialize(V.Local.sReturn)
+F.Intrinsic.Control.EndIf
+
+Gui.F_LabelView.GSGCLabelGrid.MainView("LabelGrid")
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(TryCatch,"Sub",V.Ambient.CurrentSubroutine,"Error",V.Ambient.ErrorNumber,"Desc",V.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.PopulateGrid.End
+
+Program.Sub.chkAll_Parts_Click.Start
+f.Intrinsic.Control.Try
+
+F.Intrinsic.Control.CallSub(Set_Filter)
+	
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(TryCatch,"Sub",V.Ambient.CurrentSubroutine,"Error",V.Ambient.ErrorNumber,"Desc",V.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.chkAll_Parts_Click.End
+
+
+Program.Sub.Set_Filter.Start
+f.Intrinsic.Control.Try
+V.Local.sPart.Declare(String)
+V.Local.sRev.Declare(String)
+V.Local.sFilter.Declare(String)
+
+F.Intrinsic.Control.If(V.Screen.F_LabelView!chkAll_Parts.Value,=,0)
+	F.Intrinsic.String.RPad(V.Screen.F_LabelView!txtPart_No.Text," ",17,V.Local.sPart)
+	F.Intrinsic.String.RPad(V.Screen.F_LabelView!txtRev.Text," ",3,V.Local.sRev)
+	F.Intrinsic.String.Build("{0}{1}",V.Local.sPart,V.Local.sRev,V.Local.sPart)
+	
+	F.Intrinsic.Control.If(V.Local.sPart.Trim,=,"")
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.String.Build("Part = '{0}'",V.Local.sPart,V.Local.sFilter)
+	
+	F.Data.DataView.SetFilter("LabelDT","LabelView",V.Local.sFilter)
+F.Intrinsic.Control.Else
+	F.Data.DataView.SetFilter("LabelDT","LabelView"," ")
+F.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(TryCatch,"Sub",V.Ambient.CurrentSubroutine,"Error",V.Ambient.ErrorNumber,"Desc",V.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.Set_Filter.End
