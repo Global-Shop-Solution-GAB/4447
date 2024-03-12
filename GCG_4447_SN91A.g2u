@@ -1,0 +1,297 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.sProvider.Declare(String)
+V.Global.sServer.Declare(String)
+V.Global.sDatabase.Declare(String)
+V.Global.sUID.Declare(String)
+V.Global.sPWD.Declare(String)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+v.Local.bExist.Declare(Boolean)
+
+' connect to the databases
+F.ODBC.Connection!Con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+' read SNLIC.dat to determine path for writing the transaction file
+F.Intrinsic.Control.CallSub(Getfilepath)
+F.Intrinsic.Control.CallSub(Sn91a,"FILE",V.Args.FILE)
+F.Intrinsic.Control.CallSub(Unload)
+ 
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4447_SN91A.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+'	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Debug.SetLA(v.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Main.End
+
+Program.Sub.Unload.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+f.ODBC.Connection!Con.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_4447_SN91A.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+'	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	f.Intrinsic.Debug.SetLA(v.Local.sError)
+	f.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Unload.End
+
+Program.Sub.SN91A.Start
+F.Intrinsic.Control.SetErrorHandler("SN91A_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSel.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sLines.Declare(String)
+V.Local.i.Declare(Long)
+V.Local.sRecord.Declare(String)
+V.Local.sHold.Declare(String)
+V.Local.sFileText.Declare(String)
+V.Local.sLogin.Declare(String)
+V.Local.sInProcess.Declare(String)
+V.Local.sPL.Declare(String)
+V.Local.sHeat.Declare(String)
+v.Local.sSerial.Declare(string)
+V.Local.sFileName.Declare(string)
+v.Local.Date.Declare(string)
+v.Local.Time.Declare(string)
+v.Local.fQty.Declare(float)
+v.Local.sList.Declare(String)
+v.Local.sDel.Declare(String)
+v.Local.sDel2.Declare(String)
+
+
+F.Intrinsic.UI.InvokeWaitDialog("Sending Data to Sigma Nest")
+
+
+' if no applicale PLs are found, the return will be "1"
+'f.Intrinsic.Control.If(v.Args.PLLIST,=,"1")
+'	F.Intrinsic.Control.ExitSub
+
+'' found PLs, get details for import
+'F.Intrinsic.Control.Else
+	' find Inventory Part Details
+'JOINED ITEM MASTER WITH BLANK SERIAL SO ONLY THE FULL SHEETS GET PASSED TO SN FROM GS, SN ALREADY HAS REM INFORMATION
+'	F.Intrinsic.String.Build("select MST.Part, MST.LOCATION, ITEM.LOT, ITEM.BIN, ITEM.HEAT,  ITEM.QUANTITY, MST.Amt_Cost from Inventory_Mstr AS MST JOIN ITEM_MASTER AS ITEM ON MST.PART = ITEM.PART AND MST.LOCATION = ITEM.LOCATION where MST.Product_line in ('{0}') AND ITEM.SERIAL_NUMBER = '' ",V.Args.PLLIST,V.Local.sSel)
+'	F.Intrinsic.String.Build("select MST.Part, MST.LOCATION, ITEM.HEAT,  SUM(ITEM.QUANTITY) AS QUANTITY, MST.Amt_Cost from Inventory_Mstr AS MST JOIN ITEM_MASTER AS ITEM ON MST.PART = ITEM.PART AND MST.LOCATION = ITEM.LOCATION where MST.Product_line in ('{0}') AND ITEM.SERIAL_NUMBER = '' GROUP BY MST.PART, MST.LOCATION, ITEM.HEAT, MST.AMT_COST ",V.Args.PLLIST,V.Local.sSel)
+
+	v.Local.sSel.Set("SELECT 'SN91A' AS SN91A, 1 AS ONE, RTRIM(' ') AS EMPTY, RTRIM(PART) AS PART, RTRIM(LOCATION) AS LOCATION, 1 AS QTY, RTRIM(' ') AS THICKNESS, IF(LENGTH = '',0,ISNULL(LENGTH,0)) AS LENGTH, IF(WIDTH = '',0,ISNULL(WIDTH,0)) AS WIDTH, AMT_COST AS COST  FROM V_INVENTORY_ALL WHERE CODE_SORT IN ('LAM PANEL','WOOD SHT','METAL SHT')")
+	f.Data.DataTable.CreateFromSQL("SN91A","Con",v.Local.sSel,True)
+	f.Intrinsic.Control.If(v.DataTable.SN91A.RowCount,>,0)
+		f.Data.Dictionary.CreateFromSQL("Thickness","Con","SELECT RTRIM(PART) AS PART, IF(THICKNESS = '',0,ISNULL(THICKNESS,0)) AS THICKNESS FROM V_INVENTORY_MST3")
+		f.Data.Dictionary.SetDefaultReturn("Thickness",0)
+		f.Data.DataTable.FillFromDictionary("SN91A","Thickness","Part","Thickness")
+		f.Data.Dictionary.Close("Thickness")
+		f.Data.DataView.Create("SN91A","View",22)
+		V.Local.sList.Set("SN91A*!*One*!*Empty*!*Empty*!*Part*!*Qty*!*Part*!*Thickness*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Length*!*Width*!*Empty*!*Empty*!*Cost*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Part*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty") 
+		f.Intrinsic.String.Build("{0},{0}",v.Ambient.DblQuote,v.Local.sDel)
+		f.Intrinsic.String.Build("{0}{1}{0}",v.Ambient.DblQuote,v.Ambient.NewLine,v.Local.sDel2)
+		f.Data.DataView.ToString("SN91A","View",v.Local.sList,v.Local.sDel,v.Local.sDel2,v.Local.sRecord)
+		'Fixing the Extra and missing double quotes
+		f.Intrinsic.String.Build("{0}{1}{1}",v.Ambient.NewLine,v.Ambient.DblQuote,v.Local.sDel)
+		f.Intrinsic.String.Replace(v.Local.sRecord,v.Local.sDel,"",v.Local.sRecord)
+		f.Intrinsic.String.Build("{0}{1}{0}",v.Ambient.DblQuote,v.Local.sRecord,v.Local.sRecord)
+		
+	f.Intrinsic.Control.EndIf
+'	F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSel,V.Local.sRet)
+	' no applicable parts, exit now
+'	f.Intrinsic.Control.If(v.Local.sRet,=,"")
+'		F.Intrinsic.Control.ExitSub
+
+	' found oarts, get additional information
+'	F.Intrinsic.Control.Else
+'		F.Intrinsic.String.Split(V.Local.sRet,"#$#",V.Local.sLines)
+'		F.Intrinsic.Control.For(V.Local.i,V.Local.sLines.LBound,V.Local.sLines.UBound,1)
+'			F.Intrinsic.String.Split(V.Local.sLines(v.Local.i),"*!*",V.Local.sHold)
+'			V.Local.sHold.RedimPreserve(0,4)
+
+'			' clear previous data
+'			v.Local.sRecord.Redim(0,0)
+'			v.Local.sRecord.Set("")
+'			V.Local.sRecord.Redim(0,64)
+'			V.Local.sRecord(0).Set("SN91A")
+'			V.Local.sRecord(1).Set("1")
+
+'			' Prime Code = Part
+'			V.Local.sRecord(26).Set(V.Local.sHold(0).Trim)
+
+'			' sheet/item = Part
+'			F.Intrinsic.Control.If(V.Local.sHold(2).Trim,<>,"")
+'				F.Intrinsic.String.Build("{0}_{1}",V.Local.sHold(0).Trim,V.Local.sHold(2).Trim,V.Local.sHeat)
+'			F.Intrinsic.Control.Else
+'				V.Local.sHeat.Set(V.Local.sHold(0).Trim)
+'			F.Intrinsic.Control.EndIf
+'			V.Local.sRecord(4).Set(V.Local.sHeat.Trim)
+'			' Location
+'			V.Local.sRecord(24).Set(V.Local.sHold(1).Trim)
+'			'bin
+''			V.Local.sRecord(23).Set(V.Local.sHold(3).Trim)
+'			''heat
+'			V.Local.sRecord(19).Set(V.Local.sHold(2).Trim)
+'			'lot
+''			V.Local.sRecord(25).Set(V.Local.sHold(2).Trim)
+'			' Cost
+'			V.Local.sRecord(18).Set(V.Local.sHold(4).Format*0.00)
+'			' Qty - whole sheets, subtract SN qty in process
+'			V.Local.sRecord(5).Set(V.Local.sHold(3))
+
+'			F.Intrinsic.String.Build(" select Length, Width, Description_3 from Inventory_Mst2 where Part = '{0}' and Location = '{1}' ",V.Local.sHold(0).Trim,V.Local.sHold(1).Trim,V.Local.sSel)
+'			F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSel,V.Local.sRet)
+'			f.Intrinsic.Control.If(v.Local.sRet,=,"")
+'				V.Local.sRecord(6).Set("")
+'				f.Intrinsic.Control.GoTo("Skip")
+'			F.Intrinsic.Control.Else
+'				F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+'				V.Local.sRet.RedimPreserve(0,2)
+'				f.Intrinsic.Control.If(v.Local.sRet(0).Float,=,0,"OR",v.Local.sRet(1).Float,=,0)
+'					f.Intrinsic.Control.GoTo("Skip")
+'				f.Intrinsic.Control.EndIf
+'				'Get the square inches to eaches.
+'				f.Intrinsic.Math.Mult(v.Local.sRet(0).Float,v.Local.sRet(1).Float,v.Local.fQty)
+'				f.Intrinsic.Control.If(v.Local.fQty,<>,0)
+'					f.Intrinsic.Math.Div(v.Local.sRecord(5).Float,v.Local.fQty,v.Local.sRecord(5))
+'				f.Intrinsic.Control.Else
+'					v.Local.sRecord(5).Set(0)
+'				f.Intrinsic.Control.EndIf
+'				v.Local.sRecord(5).Set(v.Local.sRecord(5).Long)
+'				' Length
+'				V.Local.sRecord(14).Set(V.Local.sRet(0).Format0.00)
+'				' Width
+'				V.Local.sRecord(15).Set(V.Local.sRet(1).Format0.00)
+'				' Material
+'				V.Local.sRecord(6).Set(V.Local.sRet(2).Trim)
+'			F.Intrinsic.Control.EndIf
+
+'			F.Intrinsic.String.Build("select Thickness from Inventory_Mst3 where Part = '{0}' and Location = '{1}' ",V.Local.sHold(0).Trim,V.Local.sHold(1).Trim,V.Local.sSel)
+'			F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSel,V.Local.sRet)
+'			f.Intrinsic.Control.If(v.Local.sRet,=,"")
+'				f.Intrinsic.Control.GoTo("Skip")
+'			f.Intrinsic.Control.Else
+'				' Thickness
+'				f.Intrinsic.Control.If(v.Local.sRet.Float,=,0)
+'					f.Intrinsic.Control.GoTo("Skip")
+'				f.Intrinsic.Control.Else
+'					V.Local.sRecord(7).Set(V.Local.sRet.Trim)
+'				f.Intrinsic.Control.EndIf
+'			f.Intrinsic.Control.EndIf
+
+'			F.Intrinsic.String.JoinCSV(V.Local.sRecord,True,V.Local.sHold)
+'			F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sFileText,V.Local.sHold,V.Ambient.NewLine,V.Local.sFileText)
+'			f.Intrinsic.Control.Label("Skip")
+'		F.Intrinsic.Control.Next(V.Local.i)
+'	F.Intrinsic.Control.EndIf
+'F.Intrinsic.Control.EndIf
+
+
+F.Intrinsic.Control.If(V.Local.sRecord.Trim,<>,"")
+	F.Intrinsic.String.DateString(V.Ambient.Now,V.Local.date)
+	F.Intrinsic.String.TimeString(V.Ambient.Now,V.Local.time)
+	f.Intrinsic.String.Build("{0}{1}{2}.txt",v.Args.FILE,v.Local.Date,v.Local.Time,v.Local.sFileName)
+	F.Intrinsic.File.String2File(V.Local.sFileName,V.Local.sRecord)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.UI.CloseWaitDialog
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("SN91A_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3849_SigmaNest_SN95_SN91A.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.Debug.SetLA(V.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.SN91A.End
+
+Program.Sub.getFilePath.Start
+F.Intrinsic.Control.SetErrorHandler("getFilePath_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSNLIC.Declare(String)
+V.Local.bExists.Declare(Boolean)
+V.Local.sText.Declare(String)
+V.Local.sFilePath.Declare(String)
+V.Local.iFor.Declare(Long)
+V.Local.iFoundRecs.Declare(Long)
+V.Local.sHold.Declare(String)
+
+' see if the SNLIC file is found.  If found, read the file path from there
+F.Intrinsic.String.Build("{0}\SNLIC.dat",V.Caller.FilesDir,V.Local.sSNLIC)
+F.Intrinsic.File.Exists(V.Local.sSNLIC,V.Local.bExists)
+
+F.Intrinsic.Control.If(V.Local.bExists,=,True)
+	F.Intrinsic.File.File2String(V.Local.sSNLIC,V.Local.sText)
+	F.Intrinsic.String.Split(V.Local.sText,V.Ambient.NewLine,V.Local.sText)
+	F.Intrinsic.Control.For(V.Local.iFor,V.Local.sText.LBound,V.Local.sText.UBound,1)
+		F.Intrinsic.String.Split(V.Local.sText(v.Local.iFor),"::",V.Local.sHold)
+		V.Local.sHold.RedimPreserve(0,1)
+		F.Intrinsic.Control.SelectCase(V.Local.sHold(0).UCase)
+			F.Intrinsic.Control.Case("INPUT")
+				v.Local.sFilePath.Set(v.Local.sHold(1))
+			F.Intrinsic.Control.Case("PROVIDER")
+				V.Global.sProvider.Set(V.Local.sHold(1))
+				F.Intrinsic.Math.Add(V.Local.iFoundRecs,1,V.Local.iFoundRecs)
+			F.Intrinsic.Control.Case("SERVER")
+				V.Global.sServer.Set(V.Local.sHold(1))
+				F.Intrinsic.Math.Add(V.Local.iFoundRecs,1,V.Local.iFoundRecs)
+			F.Intrinsic.Control.Case("DATABASE")
+				V.Global.sDatabase.Set(V.Local.sHold(1))
+				F.Intrinsic.Math.Add(V.Local.iFoundRecs,1,V.Local.iFoundRecs)
+			F.Intrinsic.Control.Case("UID")
+				V.Global.sUID.Set(V.Local.sHold(1))
+				F.Intrinsic.Math.Add(V.Local.iFoundRecs,1,V.Local.iFoundRecs)
+			F.Intrinsic.Control.Case("PWD")
+				V.Global.sPWD.Set(V.Local.sHold(1))
+				F.Intrinsic.Math.Add(V.Local.iFoundRecs,1,V.Local.iFoundRecs)
+		F.Intrinsic.Control.EndSelect
+	F.Intrinsic.Control.Next(V.Local.iFor)
+F.Intrinsic.Control.EndIf
+
+' if login credentials are not found, alert the user
+F.Intrinsic.Control.If(V.Local.iFoundRecs,<>,5)
+	F.Intrinsic.UI.Msgbox("Data connection credentials not found.")
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Variable.AddRV("FILE",V.Local.sFilePath)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("getFilePath_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_3849_SigmaNest_SN95_SN91A.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.Debug.SetLA(V.Local.sError)
+	f.Intrinsic.Control.CallSub(unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.getFilePath.End
+
+
+Program.Sub.Comments.Start
+${$0$}$GCG_4447_SN91A.g2u$}$DH1$}$10/27/2016 4:46:29 PM$}$False
+${$3$}$0$}$$}$-1$}$-1$}$$}$1/1/1900$}$SN90 transaction loads GSS Inventory into Sigma Nest
+Program.Sub.Comments.End
