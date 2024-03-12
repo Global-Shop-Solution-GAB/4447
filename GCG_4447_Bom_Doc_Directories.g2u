@@ -1,0 +1,402 @@
+Program.Sub.ScreenSU.Start
+Gui.FormBomDocDir..Create
+Gui.FormBomDocDir..Caption("BOM Document Link Directories")
+Gui.FormBomDocDir..Size(8520,2775)
+Gui.FormBomDocDir..MinX(0)
+Gui.FormBomDocDir..MinY(0)
+Gui.FormBomDocDir..Position(0,0)
+Gui.FormBomDocDir..BackColor(-2147483633)
+Gui.FormBomDocDir..MousePointer(0)
+Gui.FormBomDocDir..Event(UnLoad,FormBomDocDir_UnLoad)
+Gui.FormBomDocDir.lblSourceDir.Create(Label,"MFG Source Directory:",True,1875,255,0,165,210,True,0,"Arial",8,-2147483633,0)
+Gui.FormBomDocDir.lblLinkDir.Create(Label,"MFG Link Directory:",True,1800,255,0,165,540,True,0,"Arial",8,-2147483633,0)
+Gui.FormBomDocDir.txtSourceDir.Create(TextBox,"",True,6150,300,0,2070,120,True,0,"Arial",8,-2147483643,1)
+Gui.FormBomDocDir.txtSourceDir.Event(GotFocus,txtSourceDir_GotFocus)
+Gui.FormBomDocDir.txtSourceDir.Event(LostFocus,txtSourceDir_LostFocus)
+Gui.FormBomDocDir.txtLinkDir.Create(TextBox,"",True,6150,300,0,2070,480,True,0,"Arial",8,-2147483643,1)
+Gui.FormBomDocDir.txtLinkDir.Event(GotFocus,txtLinkDir_GotFocus)
+Gui.FormBomDocDir.txtLinkDir.Event(LostFocus,txtLinkDir_LostFocus)
+Gui.FormBomDocDir.cmdSave.Create(Button)
+Gui.FormBomDocDir.cmdSave.Size(855,375)
+Gui.FormBomDocDir.cmdSave.Position(105,1980)
+Gui.FormBomDocDir.cmdSave.Caption("Save")
+Gui.FormBomDocDir.cmdSave.Event(Click,cmdSave_Click)
+Gui.FormBomDocDir.lblGroupID.Create(Label,"Doc Group:",True,1425,255,0,150,1650,True,0,"Arial",8,-2147483633,0)
+Gui.FormBomDocDir.txtDocGroup.Create(TextBox,"",True,465,300,0,2070,1560,True,2,"Arial",8,-2147483643,1)
+Gui.FormBomDocDir.txtDocGroup.NumericOnly(2)
+Gui.FormBomDocDir.txtDocGroup.DefaultValue("-1")
+Gui.FormBomDocDir.txtDocGroup.Event(GotFocus,txtDocGroup_GotFocus)
+Gui.FormBomDocDir.lblPURSourceDir.Create(Label,"PUR Source Directory:",True,1875,240,0,165,900,True,0,"Arial",8,-2147483633,0)
+Gui.FormBomDocDir.txtPURSourceDir.Create(TextBox,"",True,6150,300,0,2070,840,True,0,"Arial",8,-2147483643,1)
+Gui.FormBomDocDir.txtPURSourceDir.Event(GotFocus,txtPURSourceDir_GotFocus)
+Gui.FormBomDocDir.txtPURSourceDir.Event(LostFocus,txtPURSourceDir_LostFocus)
+Gui.FormBomDocDir.txtPURLinkDir.Create(TextBox,"",True,6150,300,0,2070,1200,True,0,"Arial",8,-2147483643,1)
+Gui.FormBomDocDir.txtPURLinkDir.Event(GotFocus,txtPURLinkDir_GotFocus)
+Gui.FormBomDocDir.txtPURLinkDir.Event(LostFocus,txtPURLinkDir_LostFocus)
+Gui.FormBomDocDir.lblPurLinkDir.Create(Label,"PUR Link Directory:",True,1800,255,0,165,1260,True,0,"Arial",8,-2147483633,0)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+
+	'get data
+	F.Intrinsic.Control.CallSub(Get_Data)
+	
+	Gui.FormBomDocDir.cmdSave.Enabled(False)
+	
+	Gui.FormBomDocDir..Show
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.FormBomDocDir_UnLoad.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!Con.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.End
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.FormBomDocDir_UnLoad.End
+
+Program.Sub.txtSourceDir_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+
+	Gui.FormBomDocDir.txtSourceDir.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtSourceDir_GotFocus.End
+
+Program.Sub.txtLinkDir_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+
+	Gui.FormBomDocDir.txtLinkDir.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtLinkDir_GotFocus.End
+
+Program.Sub.cmdSave_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+
+	'Check if entered Dir Exist before Saving
+	F.Intrinsic.Control.CallSub(Validate_Dirs)
+	
+	F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,<>,-1)
+		F.Data.DataTable.SetValue("Dir",-1,"Doc_Group",V.Screen.FormBomDocDir!txtDocGroup.Text)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.Args.Msg.Length,>,0)
+		F.Intrinsic.UI.Msgbox(V.Args.Msg)
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	
+	'Delete From table and resave diretories
+	F.ODBC.Connection!Con.Execute("Delete From GCG_4447_BomLink_Dir")
+	
+	F.Data.DataTable.SaveToDB("Dir","Con","GCG_4447_BomLink_Dir","",128,"MFG_Source_Dir@!@MFG_Source_Dir*!*MFG_Link_Dir@!@MFG_Link_Dir*!*PUR_Source_Dir@!@PUR_Source_Dir*!*PUR_Link_Dir@!@PUR_Link_Dir*!*Doc_Group@!@Doc_Group")
+	
+	Gui.FormBomDocDir.cmdSave.Enabled(False)
+	
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdSave_Click.End
+
+Program.Sub.Get_Data.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	
+	V.Local.sSql.Set("Select MFG_Source_Dir, MFG_Link_Dir, PUR_Source_Dir, PUR_Link_Dir, Doc_Group From GCG_4447_BomLink_Dir")
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	
+	F.Data.DataTable.CreateFromSQL("Dir","Con",V.Local.sSql,True)
+	
+	F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,<>,-1)
+		Gui.FormBomDocDir.txtLinkDir.Text(V.DataTable.Dir(V.DataTable.Dir.RowCount--).MFG_Link_Dir!FieldValTrim)
+		Gui.FormBomDocDir.txtSourceDir.Text(V.DataTable.Dir(V.DataTable.Dir.RowCount--).MFG_Source_Dir!FieldValTrim)
+		Gui.FormBomDocDir.txtDocGroup.Text(V.DataTable.Dir(V.DataTable.Dir.RowCount--).Doc_Group!FieldValLong)
+		Gui.FormBomDocDir.txtPURLinkDir.Text(V.DataTable.Dir(V.DataTable.Dir.RowCount--).PUR_Link_Dir!FieldValTrim)
+		Gui.FormBomDocDir.txtPURSourceDir.Text(V.DataTable.Dir(V.DataTable.Dir.RowCount--).PUR_Source_Dir!FieldValTrim)
+	F.Intrinsic.Control.Else
+		Gui.FormBomDocDir.txtDocGroup.Text("-1")
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Get_Data.End
+
+Program.Sub.Validate_Dirs.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.bRet.Declare(Boolean,False)
+	V.Local.sMsg.Declare(String,"")
+	
+	F.Intrinsic.Control.If(V.Screen.FormBomDocDir!txtSourceDir.Text,<>,"")
+		F.Intrinsic.File.DirExists(V.Screen.FormBomDocDir!txtSourceDir.Text,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet,=,False)
+			V.Local.sMsg.Set("MFG Source Directory cannot be found, Check Dir and Save again.")
+			Gui.FormBomDocDir.cmdSave.Enabled(False)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,=,-1)
+				F.Data.DataTable.AddRow("Dir","MFG_Source_Dir",V.Screen.FormBomDocDir!txtSourceDir.Text)
+			F.Intrinsic.Control.Else
+				F.Data.DataTable.SetValue("Dir",-1,"MFG_Source_Dir",V.Screen.FormBomDocDir!txtSourceDir.Text)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.Screen.FormBomDocDir!txtLinkDir.Text,<>,"")
+		F.Intrinsic.File.DirExists(V.Screen.FormBomDocDir!txtLinkDir.Text,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet,=,False)
+			Gui.FormBomDocDir.cmdSave.Enabled(False)
+			F.Intrinsic.Control.If(V.Local.sMsg.Length,>,0)
+				F.Intrinsic.String.Build("{0}{1}Link Directory cannot be found, Check Dir and Save again.",V.Local.sMsg,V.Ambient.NewLine,V.Local.sMsg)
+			F.Intrinsic.Control.Else
+				V.Local.sMsg.Set("MFG Link Directory cannot be found, Check Dir and Save again.")
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,=,-1)
+				F.Data.DataTable.AddRow("Dir","MFG_Link_Dir",V.Screen.FormBomDocDir!txtLinkDir.Text)
+			F.Intrinsic.Control.Else
+				F.Data.DataTable.SetValue("Dir",-1,"MFG_Link_Dir",V.Screen.FormBomDocDir!txtLinkDir.Text)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.Screen.FormBomDocDir!txtPurSourceDir.Text,<>,"")
+		F.Intrinsic.File.DirExists(V.Screen.FormBomDocDir!txtPurSourceDir.Text,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet,=,False)
+			Gui.FormBomDocDir.cmdSave.Enabled(False)
+			F.Intrinsic.Control.If(V.Local.sMsg.Length,>,0)
+				F.Intrinsic.String.Build("{0}{1}PUR Source Directory cannot be found, Check Dir and Save again.",V.Local.sMsg,V.Ambient.NewLine,V.Local.sMsg)
+			F.Intrinsic.Control.Else
+				V.Local.sMsg.Set("PUR Source Directory cannot be found, Check Dir and Save again.")
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,=,-1)
+				F.Data.DataTable.AddRow("Dir","PUR_Source_Dir",V.Screen.FormBomDocDir!txtPurSourceDir.Text)
+			F.Intrinsic.Control.Else
+				F.Data.DataTable.SetValue("Dir",-1,"PUR_Source_Dir",V.Screen.FormBomDocDir!txtPurSourceDir.Text)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.Screen.FormBomDocDir!txtPURLinkDir.Text,<>,"")
+		F.Intrinsic.File.DirExists(V.Screen.FormBomDocDir!txtPURLinkDir.Text,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet,=,False)
+			Gui.FormBomDocDir.cmdSave.Enabled(False)
+			F.Intrinsic.Control.If(V.Local.sMsg.Length,>,0)
+				F.Intrinsic.String.Build("{0}{1}PUR Link Directory cannot be found, Check Dir and Save again.",V.Local.sMsg,V.Ambient.NewLine,V.Local.sMsg)
+			F.Intrinsic.Control.Else
+				V.Local.sMsg.Set("PUR Link Directory cannot be found, Check Dir and Save again.")
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,=,-1)
+				F.Data.DataTable.AddRow("Dir","PUR_Link_Dir",V.Screen.FormBomDocDir!txtPURLinkDir.Text)
+			F.Intrinsic.Control.Else
+				F.Data.DataTable.SetValue("Dir",-1,"PUR_Link_Dir",V.Screen.FormBomDocDir!txtPURLinkDir.Text)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Variable.AddRV("Msg",V.Local.sMsg)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Validate_Dirs.End
+
+Program.Sub.txtSourceDir_LostFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	Gui.FormBomDocDir.cmdSave.Enabled(True)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtSourceDir_LostFocus.End
+
+Program.Sub.txtLinkDir_LostFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	Gui.FormBomDocDir.cmdSave.Enabled(True)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtLinkDir_LostFocus.End
+
+Program.Sub.txtDocGroup_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	Gui.FormBomDocDir.txtDocGroup.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtDocGroup_GotFocus.End
+
+Program.Sub.txtPURSourceDir_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	Gui.FormBomDocDir.txtPURSourceDir.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtPURSourceDir_GotFocus.End
+
+Program.Sub.txtPURSourceDir_LostFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	Gui.FormBomDocDir.cmdSave.Enabled(True)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtPURSourceDir_LostFocus.End
+
+Program.Sub.txtPURLinkDir_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	Gui.FormBomDocDir.txtPURLinkDir.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtPURLinkDir_GotFocus.End
+
+Program.Sub.txtPURLinkDir_LostFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	Gui.FormBomDocDir.cmdSave.Enabled(True)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Doc_Directories.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomDocDir_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtPURLinkDir_LostFocus.End
+
+
+
+
+
+
+
+
