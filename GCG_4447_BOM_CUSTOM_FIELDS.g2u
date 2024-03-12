@@ -1,0 +1,125 @@
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+'by Josh Withrow aka "If its broke my name is Don Finch"
+'for LoadKing
+'
+'IF THIS IS BLOWING UP BECAUSE THEY ADDED NEW COLUMNS to the equation, try deleting the table.  This script 
+'will recreate it with the field list in the XML file.  Just try it (back up the data file first!)
+'
+'Hook: 50310
+
+'TJS, Sept 2020 - Quote 12267: Modified to include Stain and Powdercoat Part Number columns
+
+V.Local.sSql.Declare(String)
+V.Local.i.Declare(Long)
+V.Local.ii.Declare(Long)
+V.Local.sTitles.Declare(String)
+V.Local.sRecordTitles.Declare(String)
+V.Local.sRecordValues.Declare(String)
+V.Local.sRecordTitleValuePairs.Declare(String)
+V.Local.iDupes.Declare(Long)
+V.Local.sTemp.Declare(String)
+V.Local.sRow.Declare(String)
+V.Local.iRows.Declare(Long)
+V.Local.iCustom.Declare(Long)
+V.Local.bTableExists.Declare(Boolean)
+V.Local.sTableName.Declare(String, "GAB_BOM_CUST_FIELDS")
+V.Local.sTitleName.Declare(String)
+V.Local.sColType.Declare(String)
+V.Local.sTitlesTemp.Declare(String)
+
+Function.Intrinsic.Control.If(V.Caller.Hook,=,50310)
+	F.ODBC.Connection!conX.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass,72000)	
+	
+	F.Intrinsic.BDF.Load("Orig","Main-PrePopulate-bdf")
+	
+	F.Intrinsic.BDF.ReadColumnTitle("Orig",V.Local.sTitles)
+	V.Local.sTitlesTemp.Set(V.Local.sTitles)
+	Function.Intrinsic.String.Split(V.Local.sTitles,"*!*",V.Local.sTitles)
+	
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sTitles.UBound,1)
+		F.Intrinsic.Control.If(V.Local.i,>,0)
+			F.Intrinsic.String.Build("{0}*!*String",V.Local.sColType,V.Local.sColType)
+		F.Intrinsic.Control.Else
+			V.Local.sColType.Set("String")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	'Check to see if table exists to store custom columns...  if not, create it...
+	F.ODBC.Connection!conX.TableExists(V.Local.sTableName,V.Local.bTableExists)
+	Function.Intrinsic.Control.If(V.Local.bTableExists,=,False)
+		F.Intrinsic.String.Build("CREATE TABLE {0} (",V.Local.sTableName,V.Local.sSql)
+		F.Intrinsic.Control.For(V.Local.i,0,V.Local.sTitles.UBound,1)
+			V.Local.sTitleName.Set("")
+			Function.Intrinsic.Control.If(V.Local.i,>,0)
+				F.Intrinsic.String.Build("{0}, ",V.Local.sSql,V.Local.sSql)
+			Function.Intrinsic.Control.EndIf
+			F.Intrinsic.String.Replace(V.Local.sTitles(V.Local.i)," ","",V.Local.sTitleName)
+			F.Intrinsic.String.Replace(V.Local.sTitleName,".","",V.Local.sTitleName)
+			F.Intrinsic.String.Left(V.Local.sTitleName,16,V.Local.sTitleName)
+			F.Intrinsic.String.Build("{0}{1}{2}{1} CHAR(30)",V.Local.sSql,V.Ambient.DblQuote,V.Local.sTitleName,V.Local.sSql)
+		F.Intrinsic.Control.Next(V.Local.i)
+
+		F.Intrinsic.String.Build("{0})",V.Local.sSql,V.Local.sSql)
+		F.ODBC.Connection!conX.Execute(V.Local.sSql)
+		V.Local.sSql.Set("")
+	Function.Intrinsic.Control.EndIf
+	
+	
+	'Insert rows into custom table...  row by row...
+	F.Intrinsic.BDF.ReadRowCount("Orig",V.Local.iRows)
+	F.Intrinsic.String.Replace(V.Local.sTitlesTemp," ","",V.Local.sTitlesTemp)
+	F.Intrinsic.String.Replace(V.Local.sTitlesTemp,".","",V.Local.sTitlesTemp)
+	F.Data.DataTable.CreateFromString("Orig","",V.Local.sTitlesTemp,V.Local.sColType,"*!*","@!@",True)
+	F.Data.DataTable.DeleteRow("Orig")
+	
+	V.Local.i.Set(0)
+	F.Intrinsic.Math.Sub(V.Local.iRows,1,V.Local.iRows)
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.iRows,1)
+		F.Intrinsic.BDF.ReadRow("Orig",V.Local.i,V.Local.sRow)
+		F.Data.DataTable.CreateFromString("Temp",V.Local.sRow,V.Local.sTitlesTemp,V.Local.sColType,"|~|",V.Ambient.NewLine,True)
+		F.Data.DataTable.Merge("Temp","Orig",False,2)
+		F.Data.DataTable.Close("Temp")
+	F.Intrinsic.Control.Next(V.Local.i)
+
+	F.Intrinsic.String.Split(V.Local.sTitlesTemp,"*!*",V.Local.sTitlesTemp)
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sTitlesTemp.UBound,1)
+		F.Intrinsic.String.Build("LEN([{0}]) > 30",V.Local.sTitlesTemp(V.Local.i),V.Local.sTemp)
+		F.Data.DataView.Create("Orig","Temp",22,V.Local.sTemp,"")
+		F.Intrinsic.Control.If(V.DataView.Orig!Temp.RowCount,>,0)
+			F.Intrinsic.Control.For(V.Local.ii,V.DataView.Orig!Temp.RowCount--,0,-1)
+				F.Intrinsic.String.Left(V.DataView.Orig!Temp(V.Local.ii).[V.Local.sTitlesTemp(V.Local.i)]!FieldValTrim,30,V.Local.sRecordValues)
+				F.Data.DataView.SetValue("Orig","Temp",V.Local.ii,V.Local.sTitlesTemp(V.Local.i),V.Local.sRecordValues)
+			F.Intrinsic.Control.Next(V.Local.ii)
+		F.Intrinsic.Control.EndIf
+		F.Data.DataView.Close("Orig","Temp")
+	F.Intrinsic.Control.Next(V.Local.i)
+
+'	F.Data.DataTable.RemoveColumn("Orig","AltDescription1")
+'	F.Data.DataTable.RemoveColumn("Orig","AltDescription2")
+'	F.Data.DataTable.RemoveColumn("Orig","DescExtra")
+'	F.Data.DataTable.AcceptChanges("Orig")
+
+	F.Data.DataTable.SaveToDB("Orig","ConX",V.Local.sTableName,"PartNo*!*Revision",256,"PartNo@!@PartNo*!*Revision@!@Revision*!*InvPart@!@InvPart*!*Description@!@Description*!*IssueUM@!@IssueUM*!*ConsumptionConv@!@ConsumptionConv*!*AltDescription1@!@AltDescription1*!*AltDescription2@!@AltDescription2*!*DescExtra@!@DescExtra*!*Quantity@!@Quantity*!*UM@!@UM*!*Cost@!@Cost*!*Source@!@Source*!*Drawing@!@Drawing*!*Leadtime@!@Leadtime*!*Level@!@Level*!*Location@!@Location*!*Memo1@!@Memo1*!*Memo2@!@Memo2*!*Parent@!@Parent*!*Productline@!@Productline*!*Sequence@!@Sequence*!*SortCode@!@SortCode*!*Tag@!@Tag*!*Category@!@Category*!*parttype@!@parttype*!*ebbottomside@!@ebbottomside*!*ebleftside@!@ebleftside*!*ebtopside@!@ebtopside*!*ebrightside@!@ebrightside*!*totallength@!@totallength*!*totalwidth@!@totalwidth*!*graindir@!@graindir*!*ebpartno1@!@ebpartno1*!*ebpartno1qty@!@ebpartno1qty*!*ebpartno2qty@!@ebpartno2qty*!*StainPartNo@!@StainPartNo*!*PowdercoatPartNo@!@PowdercoatPartNo")
+Function.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(Error,"SubRoutine",V.Ambient.CurrentSubroutine,"eNumber",V.Ambient.ErrorNumber,"eDescription",V.Ambient.ErrorDescription)
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Error.Start
+V.Local.sError.Declare
+V.Local.iRet.Declare
+V.Local.sSep.Declare
+
+F.Intrinsic.String.Build("-------------------------------------------------------------------------------------",,V.Local.sSep)
+F.Intrinsic.String.Build("({5}-{6}){0}{7}{0}Project: {4}{0}{7}{0}Sub: {1}{0}Error: {2}, {3}", V.Ambient.NewLine, V.Args.SubRoutine, V.Args.eNumber, V.Args.eDescription,V.Caller.ScriptFile,V.Ambient.Date, V.Ambient.Time,V.Local.sSep,V.Local.sError)
+F.Intrinsic.UI.Msgbox(V.Local.sError,"Error",V.Local.iRet)
+Program.Sub.Error.End
