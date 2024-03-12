@@ -1,0 +1,66 @@
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	V.Local.sOrder.Declare(String,"")
+	V.Local.sDate.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.sPromDate.Declare(String,"")
+	
+	F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+		'order header order change
+		F.Intrinsic.Control.Case(11565)
+			'yyyymmdd
+			V.Passed.Global.Set(V.Passed.000024)
+			
+		'order header pre save
+		F.Intrinsic.Control.Case(11869)	
+			F.Intrinsic.Control.If(V.Passed.000024,<>,V.Passed.Global)
+
+				F.Intrinsic.String.LPad(V.Passed.000003,"0",7,V.Local.sOrder)
+
+				F.ODBC.Connection!Con.OpenCompanyConnection
+				'may need to get he ship days from oe_carrier
+				'for the carrier on the order header to back date the date item prom date from the order header 
+				F.Intrinsic.String.Build("Select Ship_Days  From OE_Carrier Where Carrier_CD = '{0}'",V.Passed.000094,V.Local.sSql)
+				F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSql,V.Local.sRet)
+				F.Intrinsic.Control.If(V.Local.sRet.Length,>,0)
+					'yyyymmdd
+					V.Local.sDate.Redim(0,2)
+					F.Intrinsic.String.Left(V.Passed.000024.Trim,4,V.Local.sDate(0))
+					F.Intrinsic.String.Mid(V.Passed.000024.Trim,5,2,V.Local.sDate(1))
+					F.Intrinsic.String.Right(V.Passed.000024.Trim,2,V.Local.sDate(2))
+					F.Intrinsic.String.Build("{0}/{1}/{2}",V.Local.sDate(1),V.Local.sDate(2),V.Local.sDate(0),V.Local.sDate)
+					F.Intrinsic.Date.DateSubtractWorkdays(V.Local.sDate,V.Local.sRet.Long,V.Local.sDate)
+					F.Intrinsic.String.Format(V.Local.sDate,"MMDDYY",V.Local.sPromDate)
+					F.Intrinsic.String.Format(V.Local.sDate,"YYYYMMDD",V.Local.sDate)
+					F.Intrinsic.String.Build("Update Order_Lines Set Must_Dlvr_By_Date = '{2}', Date_Item_Prom = '{3}', Item_Promise_Dt = '{4}' Where Order_No = '{0}' and Must_Dlvr_By_Date = '{1}' and Record_Type = 'L'",V.Local.sOrder,V.Passed.Global.Trim,V.Passed.000024.Trim,V.Local.sDate,V.Local.sPromDate,V.Local.sSql)
+					
+				F.Intrinsic.Control.Else
+					V.Local.sPromDate.Redim(0,2)
+					F.Intrinsic.String.Right(V.Passed.000024,2,V.Local.sPromDate(0))
+					F.Intrinsic.String.Mid(V.Passed.000024,3,2,V.Local.sPromDate(1))
+					F.Intrinsic.String.Mid(V.Passed.000024,5,2,V.Local.sPromDate(2))
+					F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sPromDate(2),V.Local.sPromDate(0),V.Local.sPromDate(1),V.Local.sPromDate)
+					F.Intrinsic.String.Build("Update Order_Lines Set Must_Dlvr_By_Date = '{2}', Date_Item_Prom = '{3}', Item_Promise_Dt = '{4}' Where Order_No = '{0}' and Must_Dlvr_By_Date = '{1}' and Record_Type = 'L'",V.Local.sOrder,V.Passed.Global.Trim,V.Passed.000024.Trim,V.Passed.000024.Trim,V.Local.sPromDate,V.Local.sSql)
+				F.Intrinsic.Control.EndIf
+				
+				F.ODBC.Connection!Con.Execute(V.Local.sSql)
+				
+				F.ODBC.Connection!Con.Close
+			F.Intrinsic.Control.EndIf
+			
+	F.Intrinsic.Control.EndSelect
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
