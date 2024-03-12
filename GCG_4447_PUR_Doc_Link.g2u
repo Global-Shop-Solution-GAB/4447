@@ -1,0 +1,212 @@
+Program.Sub.Preflight.Start
+V.Global.sSource.Declare(String,"")
+V.Global.sLink.Declare(String,"")
+V.Global.sDocGroup.Declare(String,"")
+V.Global.sDuplicate.Declare(String,"")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+
+'	F.Intrinsic.Control.If(V.Caller.Hook,=,38130)
+		F.Intrinsic.Control.CallSub(Get_Directories)
+		F.Intrinsic.Control.CallSub(Get_Files)
+		F.Intrinsic.Control.If(V.Args.Files.Length,>,0)
+			F.Intrinsic.Control.CallSub(Attach_Files,"Files",V.Args.Files)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.CallSub(Exit)
+		F.Intrinsic.Control.EndIf
+'	F.Intrinsic.Control.Else
+'		F.Intrinsic.Control.CallSub(Exit)
+'	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_PUR_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Get_Files.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sFiles.Declare(String,"")
+	
+	F.Intrinsic.Control.If(V.Global.sSource.Right1,<>,"\")
+		F.Intrinsic.String.Build("{0}\",V.Global.sSource,V.Global.sSource)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.File.GetFileList(V.Global.sSource,V.Local.sFiles)
+	
+	F.Intrinsic.Variable.AddRV("Files",V.Local.sFiles)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_PUR_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Get_Files.End
+
+Program.Sub.Attach_Files.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sFiles.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.sTemp.Declare(String,"")
+	V.Local.sSource.Declare(String,"")
+	V.Local.sTarget.Declare(String,"")
+	V.Local.iRet.Declare(Long,0)
+	V.Local.sSql.Declare(String,"")
+	V.Local.iId.Declare(Long,0)
+	V.Local.bCheck.Declare(Boolean,False)
+	V.Local.sTemp2.Declare(String,"")
+	V.Local.sDuplicate.Declare(String,"")
+	
+	F.Intrinsic.Control.If(V.Global.sLink.Right1,<>,"\")
+		F.Intrinsic.String.Build("{0}\",V.Global.sLink,V.Global.sLink)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.Global.sSource.Right1,<>,"\")
+		F.Intrinsic.String.Build("{0}\",V.Global.sSource,V.Global.sSource)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.Global.sDuplicate.Right1,<>,"\")
+		F.Intrinsic.String.Build("{0}\",V.Global.sDuplicate,V.Global.sDuplicate)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.String.Split(V.Args.Files,":",V.Local.sFiles)
+	
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sFiles.UBound,1)
+		V.Local.sTemp.Redim(0,0)
+		F.Intrinsic.String.Split(V.Local.sFiles(V.Local.i),"^",V.Local.sTemp)
+		V.Local.sTemp.RedimPreserve(0,2)
+		'file name structure Prefix_Part#_Desc
+		'using prefix and part number from file name for linking document
+		'will be moving file to link dir then linking file to the part in doc control
+		F.Intrinsic.String.Build("{0}{1}",V.Global.sSource,V.Local.sFiles(V.Local.i),V.Local.sSource)
+		F.Intrinsic.String.Build("{0}{1}",V.Global.sLink,V.Local.sFiles(V.Local.i),V.Local.sTarget)
+		F.Intrinsic.String.Build("{0}{1}",V.Global.sDuplicate,V.Local.sFiles(V.Local.i),V.Local.sDuplicate)
+		
+		F.Intrinsic.Control.If(V.Global.sLink.UCase,<>,V.Global.sSource.UCase)
+			F.Intrinsic.File.Exists(V.Local.sTarget,V.Local.bCheck)
+			F.Intrinsic.Control.If(V.Local.bCheck,=,False)
+				F.Intrinsic.File.MoveFile(V.Local.sSource,V.Local.sTarget,V.Local.iRet)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.Try
+					F.Intrinsic.File.MoveFile(V.Local.sSource,V.Local.sDuplicate,V.Local.iRet)
+				F.Intrinsic.Control.Catch
+					F.Intrinsic.File.DeleteFile(V.Local.sSource)
+				F.Intrinsic.Control.EndTry
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.String.Build("Select Link_ID From ATG_Doc_Assoc Where UCASE(rtrim(Path)+rtrim(File)) = '{0}' and Grp_ID = {1}",V.Local.sTarget,V.Global.sDocGroup,V.Local.sSql)
+		F.ODBC.Connection!Con.OpenLocalRecordSetRO("rst",V.Local.sSql)
+		F.Intrinsic.Control.If(V.ODBC.Con!rst.EOF)
+			'getting reference id
+			
+			F.Intrinsic.String.Split(V.Local.sTemp(1),".",V.Local.sTemp2)
+			F.Intrinsic.Control.If(V.Local.sTemp2.UBound,>,0)
+				V.Local.sTemp(1).Set(V.Local.sTemp2)
+			F.Intrinsic.Control.EndIf
+			F.Global.DocumentControl.CreateReference(V.Local.sTemp(1).Trim,30,V.Local.iID)
+			'attaching document to part in document control
+			F.Global.DocumentControl.AddDocument(V.Local.iID,V.Local.sTarget,V.Local.sTemp(0),V.Global.sDocGroup,"")
+		F.Intrinsic.Control.EndIf
+		F.ODBC.Con!rst.Close
+		
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.CallSub(Exit)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_PUR_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Attach_Files.End
+
+Program.Sub.Exit.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!Con.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.End
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_PUR_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Exit.End
+
+Program.Sub.Get_Directories.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	V.Local.bExists.Declare(Boolean,False)
+	
+	F.Intrinsic.String.Build("Select Pur_Source_Dir, Pur_Link_Dir, Doc_Group From GCG_4447_BomLink_Dir","",V.Local.sSql)
+	
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	
+	F.Data.DataTable.CreateFromSQL("Dir","con",V.Local.sSql,True)
+	
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.If(V.DataTable.Dir.RowCount--,<>,-1)
+		V.Global.sLink.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).Pur_Link_Dir!FieldValTrim)
+		V.Global.sSource.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).Pur_Source_Dir!FieldValTrim)
+		V.Global.sDocGroup.Set(V.DataTable.Dir(V.DataTable.Dir.RowCount--).Doc_Group!FieldVal)
+		F.Intrinsic.Control.If(V.Global.sSource.Right1,=,"\")
+			F.Intrinsic.String.Build("{0}Duplicate",V.Global.sSource,V.Global.sDuplicate)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("{0}\Duplicate",V.Global.sSource,V.Global.sDuplicate)
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.File.DirExists(V.Global.sDuplicate,V.Local.bExists)
+		F.Intrinsic.Control.If(V.Local.bExists,=,False)
+			F.Intrinsic.File.CreateDir(V.Global.sDuplicate)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Else
+		F.Data.DataTable.Close("Dir")
+		F.Intrinsic.UI.Msgbox("Pur Dirictories have not been set up. No Purchase files will be linked until Pur Directories are set up in GCG_4447_BomLink_Dir Table...")
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.Close("Dir")
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_PUR_Doc_Link.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Get_Directories.End
