@@ -1,0 +1,598 @@
+Program.Sub.ScreenSU.Start
+Gui.FormBomImport..Create
+Gui.FormBomImport..Caption("Bom Import")
+Gui.FormBomImport..Size(6525,1515)
+Gui.FormBomImport..MinX(0)
+Gui.FormBomImport..MinY(0)
+Gui.FormBomImport..Position(0,0)
+Gui.FormBomImport..BackColor(-2147483633)
+Gui.FormBomImport..MousePointer(0)
+Gui.FormBomImport..Event(UnLoad,FormBomImport_UnLoad)
+Gui.FormBomImport.lblBomImport.Create(Label,"Select native SW csv file to convert",True,5325,255,0,105,225,True,0,"Arial",8,-2147483633,0)
+Gui.FormBomImport.cmdFileBrowser.Create(Button)
+Gui.FormBomImport.cmdFileBrowser.Size(480,420)
+Gui.FormBomImport.cmdFileBrowser.Position(5745,450)
+Gui.FormBomImport.cmdFileBrowser.Caption("^")
+Gui.FormBomImport.cmdFileBrowser.Event(Click,cmdFileBrowser_Click)
+Gui.FormBomImport.lvw1.Create(ListView)
+Gui.FormBomImport.lvw1.Size(5550,390)
+Gui.FormBomImport.lvw1.Position(105,465)
+Gui.FormBomImport.lvw1.View(0)
+Gui.FormBomImport.lvw1.Event(OLEDragDrop,lvw1_OLEDragDrop)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+'TJS, Sept 2020 - Quote 12267: Modified to include Stain and Powdercoat Part Number columns
+	V.Local.sError.Declare(String,"")
+	
+	'show the form
+	Gui.FormBomImport..Show
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Import_Sw.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomImport_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.FormBomImport_UnLoad.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'check to see if connection is still open
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!Con.Close
+	F.Intrinsic.Control.EndIf
+	'end the program
+	F.Intrinsic.Control.End
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Import_Sw.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.FormBomImport_UnLoad.End
+
+Program.Sub.lvw1_OLEDragDrop.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'passing file location when user drops file in list view
+	F.Intrinsic.Control.CallSub(Process_Files,"Files",V.Args.Files)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Import_Sw.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomImport_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.lvw1_OLEDragDrop.End
+
+Program.Sub.Process_Files.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.sFiles.Declare(String,"")
+	V.Local.sMsg.Declare(String,"")
+	V.Local.sFileType.Declare(String,"")
+	V.Local.sFileContent.Declare(String,"")
+	
+	'listview allows multlipe files to be droped in
+	'spliting the argument to process each file seperately
+	F.Intrinsic.String.Split(V.Args.Files,"*!*",V.Local.sFiles)
+	
+	'looping through file liist
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sFiles.UBound,1)	
+		V.Local.sFileType.Set(V.Local.sFiles(V.Local.i).Right3)
+		F.Intrinsic.Control.If(V.Local.sFileType.UCase,=,"CSV")
+			F.Intrinsic.File.File2String(V.Local.sFiles(V.Local.i),V.Local.sFileContent)
+			F.Intrinsic.Control.If(V.Local.sFileContent.Length,>,0)
+				F.Intrinsic.UI.InvokeWaitDialog("Building GSS CSV.......................")
+				'calling parse file to convert to a gss format csv file
+				F.Intrinsic.Control.CallSub(Parse_File,"File",V.Local.sFileContent,"FileName",V.Local.sFiles(V.Local.i))
+				F.Intrinsic.UI.CloseWaitDialog
+				'calling sub to save the gss formated csv 
+				F.Intrinsic.Control.CallSub(Save_CSV,"File",V.Args.File,"FileName",V.Args.FileName)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			'letting user know that the file choosen was not a csv
+			F.Intrinsic.String.Build("{0} file must be a csv to be processed",V.Local.sFiles(V.Local.i),V.Local.sMsg)
+			F.Intrinsic.UI.Msgbox(V.Local.sMsg,"Attention")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Import_Sw.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomImport_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Process_Files.End
+
+Program.Sub.cmdFileBrowser_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	
+	'when selecting from the browser only show csv files
+	F.Intrinsic.UI.ShowOpenFileDialog("","CSV [.csv]|*.csv","",V.Local.sRet)
+	'checking to see if a file was chosen
+	F.Intrinsic.Control.If(V.Local.sRet.Length,>,0)
+		'passing file location when user drops file in list view
+		F.Intrinsic.Control.CallSub(Process_Files,"Files",V.Local.sRet)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Import_Sw.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomImport_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdFileBrowser_Click.End
+
+Program.Sub.Parse_File.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sRows.Declare(String,"")
+	V.Local.sValues.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.iCount.Declare(Long,0)
+	V.Local.iChild.Declare(Long,0)
+	V.Local.iPhantomItem.Declare(Long,0)
+	V.Local.sFileName.Declare(String,"")
+	V.Local.sFile.Declare(String,"")
+	V.Local.sLevel.Declare(String,"")
+	V.Local.sParent.Declare(String,"")
+	V.Local.sParentReV.Declare(String,"")
+	V.Local.iSeq.Declare(Long,0)
+	V.Local.sRet.Declare(String,"")
+	V.Local.sPart.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	V.Local.iQty.Declare(Long,0)
+	V.Local.iChildQty.Declare(Long,0)
+	V.Local.sChildPart.Declare(String,"")
+	V.Local.iNext.Declare(Long,0)
+	V.Local.sTempPart.Declare(String,"")
+	V.Local.sTempReV.Declare(String,"")
+	V.Local.iPreviousItem.Declare(Long,0)
+	V.Local.sTemp.Declare(String,"")
+	V.Local.sPrevParent.Declare(String,"")
+	V.Local.iCurrentItem.Declare(Long,0)
+	V.Local.sFieldNames.Declare(String,"")
+	V.Local.sDataTypes.Declare(String,"")
+	V.Local.iLevel.Declare(String,"")
+	V.Local.sFilter.Declare(String,"")
+	V.Local.sQty.Declare(String,"")
+	V.Local.iRemove.Declare(Long,0)
+	V.Local.sParentTemp.Declare(String,"")
+	V.Local.iTemp.Declare(Long,0)
+	V.Local.sParentExists.Declare(String)
+	V.Local.sReV.Declare(String,"")
+
+	'setting field names and datatypes for datatable that will be built from file that's created.
+	V.Local.sFieldNames.Set("PartNo*!*Revision*!*Description*!*Quantity*!*UM*!*Cost*!*Source*!*Drawing*!*Leadtime*!*Level*!*Location*!*Memo1*!*Memo2*!*Parent*!*Productline*!*Sequence*!*SortCode*!*Tag*!*Category*!*parttype*!*ebbottomside*!*ebleftside*!*ebtopside*!*ebrightside*!*totallength*!*totalwidth*!*graindir*!*ebpartno.1*!*ebpartno.1qty.*!*ebpartno.2qty.*!*router*!*stainpartno*!*powdercoatpartno")
+	V.Local.sDataTypes.Set("String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*Long*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String")
+	
+	'bomcompare csv columns
+	'PartNo,Revision,Description,Quantity,UM,Cost,Source,Drawing,Leadtime,Level,Location,Memo1,Memo2,Parent,Productline,Sequence,SortCode,Tag,Category,parttype,ebbottomside,ebleftside,ebtopside,ebrightside,totallength,totalwidth,graindir,ebpartno.1,ebpartno.1qty.,ebpartno.2qty.
+
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	
+	'disabling listview and browser
+	Gui.FormBomImport.lvw1.Enabled(False)
+	Gui.FormBomImport.cmdFileBrowser.Enabled(False)
+	
+	'splitting csv file into rows
+	F.Intrinsic.String.Split(V.Args.File,V.Ambient.NewLine,V.Local.sRows)
+	'getting parent part from file name
+	F.Intrinsic.String.Split(V.Args.FileName,"\",V.Local.sParent)
+	F.Intrinsic.String.Split(V.Local.sParent(V.Local.sParent.UBound),".",V.Local.sParent)
+	V.Local.sParent.RedimPreserve(0,0)
+	F.Intrinsic.String.Split(V.Local.sParent," ",V.Local.sParent)
+	F.Intrinsic.Control.If(V.Local.sParent.UBound,=,1)
+		V.Local.sParentReV.Set(V.Local.sParent(1))
+	F.Intrinsic.Control.Else
+		V.Local.sParentReV.Set("")
+	F.Intrinsic.Control.EndIf
+	
+	V.Local.sPart.Redim(0,1)
+	'spliting parent out into part rev
+	F.Intrinsic.String.RPad(V.Local.sParent," ",17,V.Local.sPart(0))
+	F.Intrinsic.String.RPad(V.Local.sParentRev," ",3,V.Local.sPart(1))
+	F.Intrinsic.String.Build("{0}{1}",V.Local.sPart(0),V.Local.sPart(1),V.Local.sPart)
+'	'getting Quantity for Parent
+'	F.Intrinsic.String.Build("Select Quantity From V_Bom_Mstr Where Part = '{0}' and Part = Parent",V.Local.sPart,V.Local.sSql)
+'	
+'	F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSql,V.Local.sRet)
+'	F.Intrinsic.Control.If(V.Local.sRet.Length,>,0)
+'		F.Intrinsic.String.Format(V.Local.sRet,"#0.00",V.Local.sRet)
+'	F.Intrinsic.Control.Else
+		'top level parent should be a qty of 1.
+		V.Local.sRet.Set("1.00")
+'	F.Intrinsic.Control.EndIf
+	V.Local.sFile.Set("PartNo,Revision,Description,Quantity,UM,Cost,Source,Drawing,Leadtime,Level,Location,Memo1,Memo2,Parent,Productline,0,SortCode,Tag,Category,parttype,ebbottomside,ebleftside,ebtopside,ebrightside,totallength,totalwidth,graindir,ebpartno.1,ebpartno.1qty.,ebpartno.2qty.,router,StainPartNo,PowdercoatPartNo")
+	'Parent Part row in gss csv
+'	F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sParent,V.Local.sParentRev,"",V.Local.sRet,"","","","","","0","","","",V.Local.sPart.Trim,"","0","","","","|",V.Local.sFile,V.Local.sFile)
+	F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sParent,V.Local.sParentRev,"",V.Local.sRet,"","","","","","0","","","","","","0","","","","|",V.Local.sFile,V.Local.sFile)
+	F.Intrinsic.String.Build("{0},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1}",V.Local.sFile,"",V.Local.sFile)
+
+	
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sRows.UBound,1)
+		F.Intrinsic.String.Split(V.Local.sRows(V.Local.i),",",V.Local.sValues)
+		F.Intrinsic.Control.If(V.Local.sValues(0).IsNumeric)
+			V.Local.sValues.RedimPreserve(0,31)
+			'checking if phantom
+			F.Intrinsic.Control.If(V.Local.sValues(4).Ucase,=,"PHANTOM")
+				V.Local.iPhantomItem.Set(V.Local.sValues(0).Long)
+				V.Local.iQty.Set(V.Local.sValues(7).Long)
+			F.Intrinsic.Control.Else
+				'checking that line is part of the phantom
+				F.Intrinsic.Control.If(V.Local.sValues(0).Left1,=,V.Local.iPhantomItem)
+					V.Local.sLevel.Set("1")
+					F.Intrinsic.Control.If(V.Local.sValues(1).Trim,<>,"")
+						F.Intrinsic.Math.Add(V.Local.iSeq,1,V.Local.iSeq)
+						F.Intrinsic.Math.Mult(V.Local.iQty,V.Local.sValues(7).Long,V.Local.iChildQty)
+						F.Intrinsic.String.Format(V.Local.iChildQty,"#0.0000",V.Local.sRet)
+						F.Intrinsic.String.RPad(V.Local.sValues(2)," ",3,V.Local.sTempRev)
+						F.Intrinsic.String.RPad(V.Local.sValues(1)," ",17,V.Local.sChildPart)
+						F.Intrinsic.Control.If(V.Local.sTempReV.Trim,<>,"")
+							F.Intrinsic.String.Format(V.Local.sTempRev,"00 ",V.Local.sTempRev)
+						F.Intrinsic.Control.EndIf
+						F.Intrinsic.String.Build("{0}{1}",V.Local.sChildPart,V.Local.sTempRev,V.Local.sChildPart)
+						F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sValues(1),V.Local.sTempReV.Trim,V.Local.sValues(6).Left30,V.Local.sRet,"","","","","",V.Local.sLevel,"","","",V.Local.sPart.Trim,"",V.Local.iSeq,"","",V.Local.sValues(4).Trim,"|",V.Local.sFile,V.Local.sFile)
+						F.Intrinsic.String.Build("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}",V.Local.sFile,"",V.Local.sValues(18),V.Local.sValues(19),V.Local.sValues(16),V.Local.sValues(15),V.Local.sValues(11),V.Local.sValues(12),V.Local.sValues(15),V.Local.sValues(20),V.Local.sValues(21),V.Local.sValues(27),V.Local.sValues(3),V.Local.sValues(22),V.Local.sValues(24),V.Local.sFile)
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.Math.Add(V.Local.sLevel.Long,1,V.Local.sLevel)
+					'checking if there is material
+					'checking to see if source is not purchase
+'					F.Intrinsic.Control.If(V.Local.sValues(5),<>,"P")
+						F.Intrinsic.Control.If(V.Local.sValues(9).Trim,<>,"")
+							F.Intrinsic.Math.Add(V.Local.iSeq,1,V.Local.iSeq)
+							F.Intrinsic.String.Format(V.Local.sValues(13),"#0.0000",V.Local.sRet)
+							F.Intrinsic.String.RPad(V.Local.sValues(9)," ",20,V.Local.sTempPart)
+							F.Intrinsic.String.Right(V.Local.sTempPart,3,V.Local.sTempRev)
+							F.Intrinsic.String.Left(V.Local.sTempPart,17,V.Local.sTempPart)
+							F.Intrinsic.Control.If(V.Local.sTempReV.Trim,<>,"")
+								F.Intrinsic.String.Format(V.Local.sTempRev,"00 ",V.Local.sTempRev)
+							F.Intrinsic.Control.EndIf
+							F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sTempPart.Trim,V.Local.sTempReV.Trim,V.Local.sValues(9).Left30,V.Local.sRet,"","","","","",V.Local.sLevel,"","","",V.Local.sChildPart.Trim,"",V.Local.iSeq,"","","","|",V.Local.sFile,V.Local.sFile)
+							F.Intrinsic.String.Build("{0},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1}",V.Local.sFile,"",V.Local.sFile)
+						F.Intrinsic.Control.EndIf
+						F.Intrinsic.Control.For(V.Local.iChild,20,30,2)
+							F.Intrinsic.Control.If(V.Local.sValues(V.Local.iChild).Trim,<>,"")
+								F.Intrinsic.Math.Add(V.Local.iChild,1,V.Local.iNext)
+								F.Intrinsic.Math.Add(V.Local.iSeq,1,V.Local.iSeq)
+								F.Intrinsic.String.Format(V.Local.sValues(V.Local.iNext),"#0.0000",V.Local.sRet)
+								F.Intrinsic.String.RPad(V.Local.sValues(V.Local.iChild)," ",20,V.Local.sTempPart)
+								F.Intrinsic.String.Right(V.Local.sTempPart,3,V.Local.sTempRev)
+								F.Intrinsic.String.Left(V.Local.sTempPart,17,V.Local.sTempPart)
+								F.Intrinsic.Control.If(V.Local.sTempReV.Trim,<>,"")
+									F.Intrinsic.String.Format(V.Local.sTempRev,"00 ",V.Local.sTempRev)
+								F.Intrinsic.Control.EndIf
+								F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sTempPart.Trim,V.Local.sTempReV.Trim,V.Local.sValues(6).Left30,V.Local.sRet,"","","","","",V.Local.sLevel,"","","",V.Local.sChildPart.Trim,"",V.Local.iSeq,"","","","|",V.Local.sFile,V.Local.sFile)
+								F.Intrinsic.String.Build("{0},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1}",V.Local.sFile,"",V.Local.sFile)
+							F.Intrinsic.Control.EndIf
+						F.Intrinsic.Control.Next(V.Local.iChild)
+'					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.Else
+					'Part is a child of the Parent
+					F.Intrinsic.String.Split(V.Local.sValues(0),".",V.Local.sTemp)
+					V.Local.iCurrentItem.Set(V.Local.sTemp.Long)
+					V.Local.sTemp.Redim(0,0)
+					F.Intrinsic.Control.If(V.Local.iPreviousItem,=,V.Local.iCurrentItem)
+						V.Local.sLevel.Set("2")
+					F.Intrinsic.Control.Else
+						V.Local.sLevel.Set("1")
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.If(V.Local.sValues(1).Trim,<>,"")
+						F.Intrinsic.String.Format(V.Local.sValues(7),"#0.0000",V.Local.sRet)
+						F.Intrinsic.Math.Add(V.Local.iSeq,1,V.Local.iSeq)
+						F.Intrinsic.String.RPad(V.Local.sValues(2)," ",3,V.Local.sTempRev)
+						F.Intrinsic.String.RPad(V.Local.sValues(1)," ",17,V.Local.sChildPart)
+						F.Intrinsic.Control.If(V.Local.sTempReV.Trim,<>,"")
+							F.Intrinsic.String.Format(V.Local.sTempRev,"00 ",V.Local.sTempRev)
+						F.Intrinsic.Control.EndIf
+						F.Intrinsic.String.Build("{0}{1}",V.Local.sChildPart,V.Local.sTempRev,V.Local.sChildPart)
+						F.Intrinsic.Control.If(V.Local.sLevel,=,"1")
+							F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sValues(1),V.Local.sTempReV.Trim,V.Local.sValues(6).Left30,V.Local.sRet,"","",V.Local.sValues(5),"","",V.Local.sLevel,"","","",V.Local.sPart.Trim,"",V.Local.iSeq,"","",V.Local.sValues(4).Trim,"|",V.Local.sFile,V.Local.sFile)
+							F.Intrinsic.String.Build("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}",V.Local.sFile,"",V.Local.sValues(18),V.Local.sValues(19),V.Local.sValues(16),V.Local.sValues(17),V.Local.sValues(11),V.Local.sValues(12),V.Local.sValues(15),V.Local.sValues(20),V.Local.sValues(21),V.Local.sValues(27),V.Local.sValues(3),V.Local.sValues(22),V.Local.sValues(24),V.Local.sFile)
+						F.Intrinsic.Control.Else
+							F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sValues(1),V.Local.sTempRev,V.Local.sValues(6).Left30,V.Local.sRet,"","",V.Local.sValues(5),"","",V.Local.sLevel,"","","",V.Local.sPrevParent.Trim,"",V.Local.iSeq,"","",V.Local.sValues(4).Trim,"|",V.Local.sFile,V.Local.sFile)
+							F.Intrinsic.String.Build("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}",V.Local.sFile,"",V.Local.sValues(18),V.Local.sValues(19),V.Local.sValues(16),V.Local.sValues(17),V.Local.sValues(11),V.Local.sValues(12),V.Local.sValues(15),V.Local.sValues(20),V.Local.sValues(21),V.Local.sValues(27),V.Local.sValues(3),V.Local.sValues(22),V.Local.sValues(24),V.Local.sFile)
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.Math.Add(V.Local.sLevel.Long,1,V.Local.sLevel)
+					'checking if there is material
+					'checking to see if source is not purchase
+'					F.Intrinsic.Control.If(V.Local.sValues(5),<>,"P")
+						F.Intrinsic.Control.If(V.Local.sValues(9).Trim,<>,"")
+							F.Intrinsic.Math.Add(V.Local.iSeq,1,V.Local.iSeq)
+							F.Intrinsic.String.Format(V.Local.sValues(13),"#0.0000",V.Local.sRet)
+							F.Intrinsic.String.RPad(V.Local.sValues(9)," ",20,V.Local.sTempPart)
+							F.Intrinsic.String.Right(V.Local.sTempPart,3,V.Local.sTempRev)
+							F.Intrinsic.String.Left(V.Local.sTempPart,17,V.Local.sTempPart)
+							F.Intrinsic.Control.If(V.Local.sTempReV.Trim,<>,"")
+								F.Intrinsic.String.Format(V.Local.sTempRev,"00 ",V.Local.sTempRev)
+							F.Intrinsic.Control.EndIf
+							F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sTempPart.Trim,V.Local.sTempReV.Trim,V.Local.sValues(10).Left30,V.Local.sRet,"","","","","",V.Local.sLevel,"","","",V.Local.sChildPart.Trim,"",V.Local.iSeq,"","","","|",V.Local.sFile,V.Local.sFile)
+							F.Intrinsic.String.Build("{0},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1}",V.Local.sFile,"",V.Local.sFile)
+						F.Intrinsic.Control.EndIf
+						F.Intrinsic.Control.For(V.Local.iChild,20,30,2)
+							F.Intrinsic.Control.If(V.Local.sValues(V.Local.iChild).Trim,<>,"")
+								F.Intrinsic.Math.Add(V.Local.iChild,1,V.Local.iNext)
+								F.Intrinsic.Math.Add(V.Local.iSeq,1,V.Local.iSeq)
+								F.Intrinsic.String.Format(V.Local.sValues(V.Local.iNext),"#0.0000",V.Local.sRet)
+								F.Intrinsic.String.RPad(V.Local.sValues(V.Local.iChild)," ",20,V.Local.sTempPart)
+								F.Intrinsic.String.Right(V.Local.sTempPart,3,V.Local.sTempRev)
+								F.Intrinsic.String.Left(V.Local.sTempPart,17,V.Local.sTempPart)
+								F.Intrinsic.Control.If(V.Local.sTempReV.Trim,<>,"")
+									F.Intrinsic.String.Format(V.Local.sTempRev,"00 ",V.Local.sTempRev)
+								F.Intrinsic.Control.EndIf
+								F.Intrinsic.String.Build("{20}{19}{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18}",V.Local.sTempPart.Trim,V.Local.sTempReV.Trim,"",V.Local.sRet,"","","","","",V.Local.sLevel,"","","",V.Local.sChildPart.Trim,"",V.Local.iSeq,"","","","|",V.Local.sFile,V.Local.sFile)
+								F.Intrinsic.String.Build("{0},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1},{1}",V.Local.sFile,"",V.Local.sFile)
+							F.Intrinsic.Control.EndIf
+						F.Intrinsic.Control.Next(V.Local.iChild)
+'					F.Intrinsic.Control.EndIf
+					F.Intrinsic.String.Split(V.Local.sValues(0),".",V.Local.sTemp)
+					F.Intrinsic.Control.If(V.Local.sTemp.UBound,=,0)
+						V.Local.iPreviousItem.Set(V.Local.sValues(0))
+						F.Intrinsic.String.RPad(V.Local.sValues(1)," ",17,V.Local.sPrevParent)
+						F.Intrinsic.Control.If(V.Local.sValues(2).Length,>,0)
+							F.Intrinsic.String.Format(V.Local.sValues(2),"00 ",V.Local.sTemp)
+						F.Intrinsic.Control.Else
+							V.Local.sTemp.Set("")
+						F.Intrinsic.Control.EndIf
+						F.Intrinsic.String.Build("{0}{1}",V.Local.sPrevParent,V.Local.sTemp.Trim,V.Local.sPrevParent)
+					F.Intrinsic.Control.EndIf
+					V.Local.sTemp.Redim(0,0)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+
+	'going through and summarizing like parts under parent
+	F.Intrinsic.Control.If(V.DataTable.BOM.Exists)
+		F.Data.DataTable.Close("Bom")
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.CreateFromString("BOM",V.Local.sFile,V.Local.sFieldNames,V.Local.sDataTypes,",","|",True)
+	'getting deepest level
+	F.Data.DataView.Create("Bom","BomView",22,"","Level Desc")
+
+	V.Local.iLevel.Set(V.DataView.BOM!BomView(1).Level!FieldValLong)
+	
+	'Clone Bom datatable
+	F.Intrinsic.Control.If(V.DataTable.BomFile.Exists)
+		F.Data.DataTable.Close("BomFile")
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.Clone("Bom","BomFile",True)
+	
+	'adding top parent
+	F.Data.DataView.SetFilter("Bom","BomView","Level = '0'")
+	F.Data.DataView.ToDataTable("Bom","BomView","Temp",True)
+	F.Data.DataTable.Merge("Temp","BomFile",False,4)
+	F.Data.DataTable.Close("Temp")
+	
+	F.Data.DataView.SetFilter("Bom","BomView","[PartNo] <> 'PartNo'")
+	F.Data.DataView.ToDataTableDistinct("Bom","BomView","DistinctBom","Parent",True)
+	
+'	'getting all level 1's
+	F.Data.DataView.SetFilter("Bom","BomView","Level = '1'")
+	F.Data.DataView.SetSort("Bom","BomView","Sequence")
+	
+	F.Intrinsic.Control.If(V.DataTable.DistBom.Exists)
+		F.Data.DataTable.Close("DistBom")
+	F.Intrinsic.Control.EndIf
+
+	F.Data.DataView.ToDataTableDistinct("Bom","BomView","DistBom","PartNo*!*Revision*!*Parent",True)
+	F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.DistBom.RowCount--,1)
+		F.Intrinsic.String.Build("Level = '1' and PartNo = '{0}' and Revision = '{1}' and [Parent] = '{2}'",V.DataTable.DistBom(V.Local.i).PartNo!FieldVal,V.DataTable.DistBom(V.Local.i).Revision!FieldVal,V.DataTable.DistBom(V.Local.i).Parent!FieldVal,V.Local.sFilter)
+		F.Data.DataView.SetFilter("Bom","BomView",V.Local.sFilter)
+		F.Intrinsic.Control.If(V.DataView.BOM!BomView.RowCount--,=,-1)
+			F.Intrinsic.Control.Next(V.Local.i)
+		F.Intrinsic.Control.EndIf
+		V.Local.iSeq.Set(V.DataView.BOM!BomView(0).Sequence!FieldValLong)
+		F.Intrinsic.Math.Mult(V.DataView.BOM!BomView(V.DataView.BOM!BomView.RowCount--).Quantity!FieldVal,V.DataView.BOM!BomView.RowCount,V.Local.sQty)
+		F.Intrinsic.String.Format(V.Local.sQty,"###0.00",V.Local.sQty)
+		F.Data.DataView.ToDataTable("Bom","BomView","Temp",True)
+		'removing uneeded lines
+		F.Intrinsic.Control.For(V.Local.iRemove,V.DataTable.Temp.RowCount--,1,-1)
+			F.Data.DataTable.DeleteRow("Temp",V.Local.iRemove)
+		F.Intrinsic.Control.Next(V.Local.iRemove)
+		'checking if datatable has rows
+		F.Intrinsic.Control.If(V.DataTable.Temp.RowCount--,<>,-1)
+			F.Data.DataTable.SetValue("Temp",-1,"Quantity",V.Local.sQty)
+			F.Data.DataTable.Merge("Temp","BomFile",False,4)
+		F.Intrinsic.Control.EndIf
+		'closing Temp
+		F.Data.DataTable.Close("Temp")
+		
+		F.Intrinsic.Control.For(V.Local.iChild,2,V.Local.iLevel,1)
+		'getting count of distinct parts for selected partent
+			F.Intrinsic.Control.If(V.Local.iChild,=,2)
+				F.Intrinsic.String.RPad(V.DataTable.DistBom(V.Local.i).PartNo!FieldVal," ",17,V.Local.sParentTemp)
+				F.Intrinsic.String.Build("{0}{1}",V.Local.sParentTemp,V.DataTable.DistBom(V.Local.i).Revision!FieldVal,V.Local.sParentTemp)
+				
+				F.Intrinsic.String.Build("[Level] = '{0}' and [Parent] = '{1}' and Sequence > {2}",V.Local.iChild,V.Local.sParentTemp,V.Local.iSeq,V.Local.sFilter)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.If(V.Local.sParentTemp.Left1,=,"'")
+					F.Intrinsic.String.Build("[Level] = '{0}' and [Parent] In({1}) and Sequence > {2}",V.Local.iChild,V.Local.sParentTemp,V.Local.iSeq,V.Local.sFilter)
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Build("[Level] = '{0}' and [Parent] In('{1}') and Sequence > {2}",V.Local.iChild,V.Local.sParentTemp,V.Local.iSeq,V.Local.sFilter)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+			
+			F.Data.DataView.Create("Bom","BomChild",22,V.Local.sFilter,"Sequence")
+			
+			'getting of rowcount to stop deleting child records
+			F.Data.DataView.ToDataTableDistinct("Bom","BomChild","ChildTemp","PartNo*!*Revision*!*Parent",True)
+			'creating datatable to delete child records and to merge to bomfile datatable
+			F.Data.DataView.ToDataTable("Bom","BomChild","Temp",True)
+			F.Intrinsic.Control.For(V.Local.iRemove,V.DataTable.Temp.RowCount--,V.DataTable.ChildTemp.RowCount,-1)
+				F.Data.DataTable.DeleteRow("Temp",V.Local.iRemove)
+			F.Intrinsic.Control.Next(V.Local.iRemove)
+			'check if temp datatable has rows
+			F.Intrinsic.Control.If(V.DataTable.Temp.RowCount--,<>,-1)
+				V.Local.sTemp.Set("")
+				F.Data.DataTable.Merge("Temp","BomFile",False,4)
+				F.Intrinsic.Control.For(V.Local.iTemp,0,V.DataTable.Temp.RowCount--,1)
+					F.Intrinsic.String.RPad(V.DataTable.Temp(V.Local.iTemp).PartNo!FieldVal," ",17,V.Local.sParentTemp)
+					F.Intrinsic.Control.If(V.DataTable.Temp(V.Local.iTemp).Revision!FieldValTrim,<>,"")
+						F.Intrinsic.String.Build("{0}{1}",V.Local.sParentTemp,V.DataTable.Temp(V.Local.iTemp).Revision!FieldVal,V.Local.sParentTemp)
+					F.Intrinsic.Control.Else
+						V.Local.sParentTemp.Set(V.Local.sParentTemp.Trim)
+					F.Intrinsic.Control.EndIf
+					
+					F.Intrinsic.Control.If(V.Local.sParentTemp.Trim,<>,"")
+						F.Intrinsic.String.Build("[Parent] = '{0}'",V.Local.sParentTemp,V.Local.sParentExists)
+'						F.Data.DataTable.Select("BomFile",V.Local.sParentExists,V.Local.sParentExists)
+						F.Data.DataTable.Select("DistinctBom",V.Local.sParentExists,V.Local.sParentExists)
+						F.Intrinsic.Control.If(V.Local.sParentExists,<>,"***NORETURN***")
+							F.Intrinsic.Control.If(V.Local.sTemp.Trim,=,"")
+								F.Intrinsic.String.Build("'{0}'",V.Local.sParentTemp,V.Local.sTemp)
+							F.Intrinsic.Control.Else
+								F.Intrinsic.String.Build("{0},'{1}'",V.Local.sTemp,V.Local.sParentTemp,V.Local.sTemp)
+							F.Intrinsic.Control.EndIf
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.Next(V.Local.iTemp)
+				
+				V.Local.sParentTemp.Set(V.Local.sTemp)
+				
+'				F.Data.DataTable.Merge("Temp","BomFile",False,4)
+			F.Intrinsic.Control.EndIf
+			
+			F.Data.DataTable.Close("Temp")
+			F.Data.DataView.Close("Bom","BomChild")
+			F.Data.DataTable.Close("ChildTemp")
+			
+		F.Intrinsic.Control.Next(V.Local.iChild)
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Intrinsic.Control.If(V.DataTable.DistBom.Exists)
+		F.Data.DataTable.Close("DistBom")
+	F.Intrinsic.Control.EndIf
+
+	F.Data.DataView.Create("BomFile","BomFileView",22,"","")
+	F.Data.DataView.ToDataTableDistinct("BomFile","BomFileView","DistBom","PartNo*!*Revision*!*Source",True)
+	
+	F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.DistBom.RowCount--,1)
+		F.Intrinsic.Control.If(V.DataTable.DistBom(V.Local.i).Source!FieldValTrim,=,"F","OR",V.DataTable.DistBom(V.Local.i).Source!FieldValTrim,=,"M")
+			F.Intrinsic.String.Build("PartNo = '{0}' and Revision = '{1}'",V.DataTable.DistBom(V.Local.i).PartNo!FieldValTrim,V.DataTable.DistBom(V.Local.i).Revision!FieldVal,V.Local.sFilter)
+			F.Data.DataView.SetFilter("BomFile","BomFileView",V.Local.sFilter)
+			F.Intrinsic.Control.If(V.DataView.BomFile!BomFileView.RowCount--,>,0)		
+				V.Local.iCount.Set(V.DataView.BomFile!BomFileView.RowCount)
+				F.Intrinsic.String.RPad(V.DataTable.DistBom(V.Local.i).PartNo!FieldValTrim," ",17,V.Local.sPart)
+				F.Intrinsic.String.RPad(V.DataTable.DistBom(V.Local.i).Revision!FieldValTrim," ",3,V.Local.sRev)
+				F.Intrinsic.String.Build("[Parent] = '{0}{1}'",V.Local.sPart,V.Local.sReV.Trim,V.Local.sFilter)
+				F.Data.DataView.SetFilter("BomFile","BomFileView",V.Local.sFilter)
+				F.Intrinsic.Math.Div(V.DataView.BomFile!BomFileView.RowCount,V.Local.iCount,V.Local.iCount)
+				F.Intrinsic.Control.For(V.Local.iLevel,V.DataView.BomFile!BomFileView.RowCount--,V.Local.iCount,-1)
+					F.Data.DataTable.DeleteRow("BomFile",V.DataView.BomFile!BomFileView(V.Local.iLevel).DataTableIndex)
+				F.Intrinsic.Control.Next(V.Local.iLevel)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+
+	F.Data.DataView.Create("BomFile","TempBomFile",22,"","Sequence")
+	'loop through bomfile and resequence
+	F.Intrinsic.Control.For(V.Local.i,0,V.DataView.BomFile!TempBomFile.RowCount--,1)
+		F.Data.DataView.SetValue("BomFile","TempBomFile",V.Local.i,"Sequence",V.Local.i)
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	V.Local.sTemp.Set("PartNo,Revision,Description,Quantity,UM,Cost,Source,Drawing,Leadtime,Level,Location,Memo1,Memo2,Parent,Productline,Sequence,SortCode,Tag,Category,parttype,ebbottomside,ebleftside,ebtopside,ebrightside,totallength,totalwidth,graindir,ebpartno.1,ebpartno.1qty.,ebpartno.2qty.,router,StainPartNo,PowdercoatPartNo")
+	
+	'creat view to send to string
+	F.Data.DataView.Create("BomFile","VBomFile",22,"","Sequence")
+	F.Data.DataView.ToString("BomFile","VBomFile",",","|",V.Local.sFile)
+	
+	F.Intrinsic.String.Build("{0}|{1}",V.Local.sTemp,V.Local.sFile,V.Local.sFile)
+	
+	F.Data.DataView.Close("BomFile","VBomFile")
+	F.Data.DataTable.Close("BomFile")
+	
+	'creating file name
+	F.Intrinsic.String.Build("{0}_GssImport",V.Local.sParent,V.Local.sFileName,V.Local.sFileName)
+	
+	'returning filen conent and filename
+	F.Intrinsic.Variable.AddRV("File",V.Local.sFile,"FileName",V.Local.sFileName)
+	
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Import_Sw.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomImport_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Parse_File.End
+
+Program.Sub.Save_CSV.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sFileLocation.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.iRet.Declare(Long,0)
+	V.Local.sFile.Declare(String,"")
+	
+	'allowing user to select location to save the file
+	F.Intrinsic.UI.FolderBrowser("Select Folder",V.Local.sRet)
+	
+	'saving the file
+	F.Intrinsic.Control.If(V.Local.sRet.Length,>,0)
+		F.Intrinsic.String.Build("{0}\{1}.csv",V.Local.sRet,V.Args.FileName,V.Local.sFileLocation)
+		F.Intrinsic.String.Replace(V.Args.File,V.Ambient.DblQuote,"",V.Local.sFile)
+		F.Intrinsic.String.DelimitedStringToCSV(V.Local.sFile,"|",",",V.Local.sFile)
+		
+		F.Intrinsic.File.String2File(V.Local.sFileLocation,V.Local.sFile)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.Msgbox("To save a File You'll need to Select a Folder.  Do you want to Select a folder to save the file?","Attention",4,V.Local.iRet)
+		F.Intrinsic.Control.If(V.Local.iRet,=,6)
+			'recalling sub if user does want to save the csv
+			F.Intrinsic.Control.CallSub(Save_CSV,"File",V.Args.File,"FileName",V.Args.FileName)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	'letting user know the location they selected
+	F.Intrinsic.String.Build("FIle Saved Location: {0}",V.Local.sRet,V.Local.sRet)
+	F.Intrinsic.UI.Msgbox(V.Local.sRet)
+	
+	'enabling the lisview and broswer again
+	Gui.FormBomImport.lvw1.Enabled(True)
+	Gui.FormBomImport.cmdFileBrowser.Enabled(True)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Bom_Import_Sw.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormBomImport_Unload)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Save_CSV.End
