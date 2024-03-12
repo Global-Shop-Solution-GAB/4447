@@ -1,0 +1,283 @@
+Program.Sub.Preflight.Start
+Variable.Global.sFileNames.Declare(String)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'TJS, Sept 2020 - Quote 12267: Modified to include Stain and Powdercoat Part Number columns
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+		
+'this will run on online update as well as call itself async. A sleep as been added so when it calls itself the other will have already closed by the time we check for the pid. pre online hook is 38120
+'F.Intrinsic.UI.InvokeWaitDialog("Printing Labels from Sigmanest Color Offload")
+'this program is called from GCG_4447_lbl_reprint_watchdog.g2u this program will contiue to call itself until 4447_{0}.stop = true ({0} = companycode). 
+F.Intrinsic.UI.Sleep(5)
+F.ODBC.Connection!Con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+F.Intrinsic.Control.CallSub(isRunning)
+
+'TJS, Oct 2020 - Adding Stain and Powdercoat part numbers from GAB_BOM_CUST_FIELDS
+F.Data.DataTable.CreateFromSQL("dtCustFields","con","Select PartNo,Revision,StainPartNo,PowderCoatPartNo from GAB_BOM_CUST_FIELDS")
+F.Data.DataTable.AddExpressionColumn("dtCustFields","GSSPart","String","Substring(Trim([PartNo]) + '                 ',1,17) + Substring(Trim([Revision]) + '   ',1,3)")
+
+F.Data.Dictionary.CreateFromDatatable("dictStain","dtCustFields","GSSPart","StainPartNo")
+F.Data.Dictionary.SetDefaultReturn("dictStain","")
+
+F.Data.Dictionary.CreateFromDatatable("dictPowder","dtCustFields","GSSPart","PowdercoatPartNo")
+F.Data.Dictionary.SetDefaultReturn("dictPowder","")
+
+'LABEL_LASER
+F.Intrinsic.Control.CallSub(Get_Files,"Label","LABEL_LASER")
+F.Intrinsic.Control.CallSub(Read_File,"Label","LABEL_LASER")
+V.Global.sFileNames.Set("")
+'LABEL_ROUTER_BIESSE_CELL
+
+F.Intrinsic.Control.CallSub(Get_Files,"Label","LABEL_ROUTER_BIESSE_CELL")
+F.Intrinsic.Control.CallSub(Read_File,"Label","LABEL_ROUTER_BIESSE_CELL")
+V.Global.sFileNames.Set("")
+'LABEL_ROUTER_SOLID_SURF
+F.Intrinsic.Control.CallSub(Get_Files,"Label","LABEL_ROUTER_SOLID_SURF")
+F.Intrinsic.Control.CallSub(Read_File,"Label","LABEL_ROUTER_SOLID_SURF")
+'LABEL_ROUTER_SHOP_ONE
+F.Intrinsic.Control.CallSub(Get_Files,"Label","LABEL_ROUTER_SHOP_ONE")
+F.Intrinsic.Control.CallSub(Read_File,"Label","LABEL_ROUTER_SHOP_ONE")
+'F.Intrinsic.UI.CloseWaitDialog
+F.Intrinsic.Control.CallSub(Exit)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: GCG_4447_Label_Reprint.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		'F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Exit.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sGab.Declare(String)
+V.Local.iRet.Declare(Long)
+
+F.Intrinsic.String.Build("{0}\GAB\GAS\GCG_4447_Label_Reprint.g2u",V.Caller.PluginsDir,V.Local.sGab)
+
+F.ODBC.Connection!Con.Close
+
+F.Global.Task.CallAsyncGas(V.Local.sGab,"",2,V.Local.iRet)
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: GCG_4447_Label_Reprint.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		''F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Exit.End
+
+Program.Sub.Read_File.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.iBIRunID.Declare(Long)
+V.Local.iRptID.Declare(Long)
+V.Local.iLogID.Declare(Long)
+V.Local.sSql.Declare(String)
+V.Local.sRows.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sFQN.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.i.Declare(Long)
+V.Local.iC.Declare(Long)
+V.Local.sPath.Declare(String)
+V.Local.sJss.Declare(String)
+V.Local.sPrinter.Declare(String)
+V.Local.sTempFile.Declare(String)
+V.Local.sTemp.Declare(String)
+V.Local.bRet.Declare(Boolean,False)
+
+F.Intrinsic.Control.SelectCase(V.Args.Label)
+	F.Intrinsic.Control.Case("LABEL_LASER")
+		F.Intrinsic.String.Build("{0}\SIGMANEST\LABEL_LASER\",V.Caller.GlobalDir,V.Local.sPath)
+		V.Local.sPrinter.Set("LASER")
+
+	F.Intrinsic.Control.Case("LABEL_ROUTER_BIESSE_CELL")
+		F.Intrinsic.String.Build("{0}\SIGMANEST\LABEL_ROUTER_BIESSE_CELL\",V.Caller.GlobalDir,V.Local.sPath)
+		V.Local.sPrinter.Set("ROUTER - BIESSE CELL")
+
+	F.Intrinsic.Control.Case("LABEL_ROUTER_SOLID_SURF")
+		F.Intrinsic.String.Build("{0}\SIGMANEST\LABEL_ROUTER_SOLID_SURF\",V.Caller.GlobalDir,V.Local.sPath)
+		V.Local.sPrinter.Set("ROUTER - SOLID SURF")
+
+	F.Intrinsic.Control.Case("LABEL_ROUTER_SHOP_ONE")
+		F.Intrinsic.String.Build("{0}\SIGMANEST\LABEL_ROUTER_SHOP_ONE\",V.Caller.GlobalDir,V.Local.sPath)
+		V.Local.sPrinter.Set("SHOP 1 ROVER")
+		
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.If(V.Global.sFileNames.Length,>,0)
+	F.Intrinsic.String.Build("{0}: {1}{2}",V.Ambient.PID,V.Global.sFileNames,V.Ambient.NewLine,V.Local.sTempFile)
+	F.Intrinsic.Control.If(V.Caller.GlobalDir.Right1,=,"\")
+		F.Intrinsic.String.Build("{0}CUSTOM\4447\LKM_4447.txt",V.Caller.GlobalDir,V.Local.sTemp)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Build("{0}\CUSTOM\4447\LKM_4447.txt",V.Caller.GlobalDir,V.Local.sTemp)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.File.Exists(V.Local.sTemp,V.Local.bRet)
+	F.Intrinsic.Control.If(V.Local.bRet,=,False)
+		F.Intrinsic.File.String2File(V.Local.sTemp,V.Local.sTempFile)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.File.Append2File(V.Local.sTemp,V.Local.sTempFile)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.String.Split(V.Global.sFileNames,":",V.Local.sFile)
+
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sFile.UBound,1)
+		F.Intrinsic.String.Build("{0}{1}",V.Local.sPath,V.Local.sFile(V.Local.i),V.Local.sFQN)
+		
+		F.Intrinsic.File.File2String(V.Local.sFQN,V.Local.sRows)
+		F.Intrinsic.String.Split(V.Local.sRows,V.Ambient.NewLine,V.Local.sRows)
+		F.Intrinsic.Control.For(V.Local.iC,0,V.Local.sRows.UBound,1)
+			F.Intrinsic.String.Split(V.Local.sRows(V.Local.iC),",",V.Local.sRet)
+			F.Intrinsic.Control.If(V.Local.sJss.Length,=,0)
+				F.Intrinsic.String.Build("('{0}'",V.Local.sRet(0),V.Local.sJss)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Build("{0},'{1}'",V.Local.sJss,V.Local.sRet(0),V.Local.sJss)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.iC)
+
+		F.Intrinsic.Control.If(V.Local.sJss.Length,>,0)
+			F.Intrinsic.String.Build("{0})",V.Local.sJss,V.Local.sJss)
+
+			F.Intrinsic.String.Build("Select Distinct * From GCG_4447_Label_Data Where JSSI IN {0}",V.Local.sJss,V.Local.sSql)
+			F.Data.DataTable.CreateFromSQL("LabelTemp","con",V.Local.sSql,True)
+			
+			'TJS, Oct 2020 - Adding stain and powder coat part numbers to label output.
+			F.Data.DataTable.AddColumn("LabelTemp","StainPartNo","String")
+			F.Data.DataTable.AddColumn("LabelTemp","PowdercoatPartNo","String")
+			
+			F.Data.DataTable.FillFromDictionary("LabelTemp","dictStain","PART","StainPartNo")
+			F.Data.DataTable.FillFromDictionary("LabelTemp","dictPowder","PART","PowdercoatPartNo")
+
+			'*******************************END***************************************
+
+			F.Intrinsic.Control.If(V.DataTable.LabelTemp.Exists,=,True)
+				F.Intrinsic.Control.If(V.DataTable.LabelTemp.RowCount--,<>,-1)
+					F.Global.BI.GetIDFromName("GCG_4442_Kitting_Labels.lab",V.Local.iRptID)
+					F.Global.BI.GetRunID(V.Local.iBIRunID)
+					F.Global.BI.StartLogging(V.Local.iBIRunID,V.Local.iRptID,0,"",V.Local.iLogID)
+					F.Global.BI.StopLogging(V.Local.iLogID)
+					F.Global.BI.PrintCodesoftLabelFromDataTable(V.Local.iBIRunID,V.Local.iLogID,"LabelTemp",V.Local.sPrinter,True)
+				F.Intrinsic.Control.EndIf
+				F.Data.DataTable.Close("LabelTemp")
+				V.Local.sJss.Set("")
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.File.DeleteFile(V.Local.sFQN)
+	F.Intrinsic.Control.Next(V.Local.i)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: GCG_4447_Label_Reprint.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Read_File.End
+
+Program.Sub.Get_Files.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sPath.Declare(String)
+
+F.Intrinsic.Control.SelectCase(V.Args.Label)
+	F.Intrinsic.Control.Case("LABEL_LASER")
+		F.Intrinsic.String.Build("{0}\SIGMANEST\LABEL_LASER\",V.Caller.GlobalDir,V.Local.sPath)
+
+	F.Intrinsic.Control.Case("LABEL_ROUTER_BIESSE_CELL")
+		F.Intrinsic.String.Build("{0}\SIGMANEST\LABEL_ROUTER_BIESSE_CELL\",V.Caller.GlobalDir,V.Local.sPath)
+
+	F.Intrinsic.Control.Case("LABEL_ROUTER_SOLID_SURF")
+		F.Intrinsic.String.Build("{0}\SIGMANEST\LABEL_ROUTER_SOLID_SURF\",V.Caller.GlobalDir,V.Local.sPath)
+		
+	F.Intrinsic.Control.Case("LABEL_ROUTER_SHOP_ONE")
+		F.Intrinsic.String.Build("{0}\SIGMANEST\LABEL_ROUTER_SHOP_ONE\",V.Caller.GlobalDir,V.Local.sPath)
+		
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.File.GetFileList(V.Local.sPath,V.Global.sFileNames)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: GCG_4447_Label_Reprint.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Get_Files.End
+
+Program.Sub.isRunning.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String)
+V.Local.sFile.Declare(string)
+V.Local.i.Declare(Long)
+V.Local.bCheck.Declare(Boolean)
+V.Local.sText.Declare(String)
+
+''we run the program async so it will not hold up online update - we check the PID and if it is stil running, we end the current program.
+'F.Intrinsic.String.Build("{0}\4447.pid",V.Caller.FilesDir,V.Local.sFile)
+'F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bCheck)
+'F.Intrinsic.Control.If(V.Local.bCheck,=,True)
+'	F.Intrinsic.File.IsFileLocked(V.Local.sFile,V.Local.bCheck)
+'	F.Intrinsic.Control.If(V.Local.bCheck,=,False)
+'		F.Intrinsic.File.File2String(V.local.sFile,V.Local.sText)
+'		F.Intrinsic.String.Split(V.Local.sText,"*!*",V.Local.sText)
+'		V.Local.i.Set(V.Local.sText(0))
+'		F.Intrinsic.Task.PIDRunning(V.Local.i,V.Local.bCheck)
+'		F.Intrinsic.Control.If(V.Local.bCheck,=,True)
+'			F.Intrinsic.Date.DateDiff("N",V.Local.sText(1),V.Ambient.Now,V.Local.i)
+'			F.Intrinsic.Control.If(V.Local.i,>,3)
+'				'create file with current PID, datetime and continue running
+'				F.Intrinsic.Task.TerminatePID(V.Local.sText(0))
+'				F.Intrinsic.String.Build("{0}*!*{1}",V.Ambient.PID,V.Ambient.Now,V.Local.sText)
+'				F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sText)
+'			F.Intrinsic.Control.Else
+'				'end program
+'				F.Intrinsic.Control.End
+'			F.Intrinsic.Control.EndIf
+'		F.Intrinsic.Control.Else
+'			'create file with current PID, datetime and continue running
+'			F.Intrinsic.String.Build("{0}*!*{1}",V.Ambient.PID,V.Ambient.Now,V.Local.sText)
+'			F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sText)		
+'		F.Intrinsic.Control.EndIf
+'	F.Intrinsic.Control.Else
+'		F.Intrinsic.Control.CallSub(exit)	
+'	F.Intrinsic.Control.EndIf	
+'F.Intrinsic.Control.Else
+'	'create file with current PID, datetime and continue running
+'	F.Intrinsic.String.Build("{0}*!*{1}",V.Ambient.PID,V.Ambient.Now,V.Local.sText)
+'	F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sText)	
+'F.Intrinsic.Control.EndIf
+
+'using a watchdog 
+'checking if a file exists if it does end the label reprint else let it continue to run.
+
+F.Intrinsic.String.Build("{0}\4447_{1}.stop",V.Caller.FilesDir,V.Caller.CompanyCode,V.Local.sFile)
+F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bCheck)
+F.Intrinsic.Control.If(V.Local.bCheck,=,True)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: GCG_4447_Label_Reprint.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.isRunning.End
+
+Program.Sub.Comments.Start
+${$0$}$$}$$}$12:00:00 AM$}$False
+${$3$}$0$}$$}$0$}$-1$}$$}$12:00:00 AM$}$This will be able to print labels from different workstations based on what is scanned. 
+
+some workcenters will be scanning a work order# from a traveller or cut list, others will be scanning a qr code label containing all the label contents.
+Program.Sub.Comments.End
