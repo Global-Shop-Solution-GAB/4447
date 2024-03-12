@@ -1,0 +1,5 @@
+CREATE TABLE "GCG_4447_Email"(
+ "STATUS" VARCHAR(7),
+ "Email" LONGVARCHAR,
+ "Subject" VARCHAR(50),
+ "Body" LONGVARCHAR);
