@@ -1,0 +1,200 @@
+Program.Sub.ScreenSU.Start
+Gui.FormRework..Create
+Gui.FormRework..Caption("Sales Order Re-Work Work Orders")
+Gui.FormRework..Size(15360,10665)
+Gui.FormRework..MinX(0)
+Gui.FormRework..MinY(0)
+Gui.FormRework..Position(0,0)
+Gui.FormRework..BackColor(-2147483633)
+Gui.FormRework..MousePointer(0)
+Gui.FormRework..Event(UnLoad,FormRework_UnLoad)
+Gui.FormRework.lblSO.Create(Label,"Enter First Four of Sales Order",True,2460,255,0,105,240,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.txtSO.Create(TextBox,"",True,1215,300,0,105,480,True,0,"Arial",8,-2147483643,1)
+Gui.FormRework.txtSO.MaxLength(7)
+Gui.FormRework.txtSO.Event(GotFocus,txtSO_GotFocus)
+Gui.FormRework.txtSO.Event(LostFocus,txtSO_KeyPressEnter)
+Gui.FormRework.txtSO.Event(KeyPressEnter,txtSO_KeyPressEnter)
+Gui.FormRework.cmdSO.Create(Button)
+Gui.FormRework.cmdSO.Size(390,375)
+Gui.FormRework.cmdSO.Position(1425,450)
+Gui.FormRework.cmdSO.Caption("^")
+Gui.FormRework.cmdSO.Event(Click,cmdSO_Click)
+Gui.FormRework.GsGridControlReWork.Create(GsGridControl)
+Gui.FormRework.GsGridControlReWork.Size(14955,9120)
+Gui.FormRework.GsGridControlReWork.Position(105,930)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String,"")
+
+Gui.FormRework.GsGridControlReWork.Anchor(15)
+
+F.Intrinsic.Control.CallSub(Set_Properties)
+
+Gui.FormRework..Show
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_WO.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.FormRework_UnLoad.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String,"")
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_WO.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.FormRework_UnLoad.End
+
+Program.Sub.cmdSO_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String,"")
+V.Local.sRet.Declare(String,"")
+
+F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+
+F.Intrinsic.UI.Browser(5100,"",V.Local.sRet)
+
+F.Intrinsic.Control.If(V.Local.sRet,<>,V.Ambient.Cancel)
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	Gui.FormRework.txtSO.Text(V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(txtSO_KeyPressEnter)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_WO.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.cmdSO_Click.End
+
+Program.Sub.txtSO_KeyPressEnter.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String,"")
+
+F.Intrinsic.Control.CallSub(Get_Data)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_WO.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtSO_KeyPressEnter.End
+
+Program.Sub.txtSO_GotFocus.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String,"")
+
+Gui.FormRework.txtSO.SelectAll
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_WO.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.txtSO_GotFocus.End
+
+Program.Sub.Set_Properties.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String,"")
+V.Local.sSql.Declare(String,"")
+
+F.ODBC.Connection!Con.OpenCompanyConnection
+
+V.Local.sSql.Set("Select Job, Suffix, Comments_1 From V_Job_Header Where Job = '-1'")
+F.Data.DataTable.CreateFromSQL("WO","Con",V.Local.sSql,True)
+
+F.ODBC.Connection!Con.Close
+
+Gui.FormRework.GsGridControlReWork.AddGridviewFromDatatable("WO","WO")
+
+Gui.FormRework.GsGridControlReWork.SetGridviewProperty("WO","Editable",False)
+Gui.FormRework.GsGridControlReWork.SetGridviewProperty("WO","ReadOnly",True)
+
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Job","Caption","Job")
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Job","HeaderBackColor","Green")
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Job","HeaderForeColor","White")
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Suffix","Caption","Suffix")
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Suffix","HeaderBackColor","Green")
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Suffix","HeaderForeColor","White")
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Comments_1","Caption","Comments 1")
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Comments_1","HeaderBackColor","Green")
+Gui.FormRework.GsGridControlReWork.SetColumnProperty("WO","Comments_1","HeaderForeColor","White")
+
+Gui.FormRework.GsGridControlReWork.MainView("WO")
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_WO.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Set_Properties.End
+
+Program.Sub.Get_Data.Start
+F.Intrinsic.Control.Try
+V.Local.sError.Declare(String,"")
+V.Local.sSql.Declare(String,"")
+V.Local.sOrder.Declare(String,"")
+
+V.Local.sOrder.Set(V.Screen.FormRework!txtSO.Text)
+F.Intrinsic.Control.If(V.Local.sOrder.Length,>,0)
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	
+	F.Intrinsic.String.Build("Select Job, Suffix, Comments_1 From V_Job_Header Where Comments_1 like '%{0}%' Order by Job,Suffix",V.Local.sOrder.Right4,V.Local.sSql)
+	F.Data.DataTable.CreateFromSQL("TempWO","Con",V.Local.sSql,True)
+	
+	F.Data.DataTable.DeleteRow("WO")
+	F.Data.DataTable.AcceptChanges("WO")
+	
+	F.Data.DataTable.Merge("TempWO","WO",False,2)
+	F.Data.DataTable.Close("TempWO")
+	
+	Gui.FormRework.GsGridControlReWork.MainView("WO")
+	
+	F.ODBC.Connection!Con.Close
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_WO.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Get_Data.End
