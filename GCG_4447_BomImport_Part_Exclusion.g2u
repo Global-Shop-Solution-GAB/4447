@@ -1,0 +1,325 @@
+Program.Sub.Preflight.Start
+V.Global.sRet.Declare(String,"")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	F.Intrinsic.Control.If(V.Caller.Hook,=,50313)	
+		'get part/rev exclustion
+		F.Intrinsic.Control.CallSub(Get_Data)
+		'load bdf to datatable
+		F.Intrinsic.Control.CallSub(Load_BDF)
+		'process bdf
+		F.Intrinsic.Control.CallSub(Process_BDF)
+		'rebuild bdf		
+		F.Intrinsic.Control.CallSub(Rebuild_BDF)
+	F.Intrinsic.Control.EndIf
+	
+	'end program
+	F.Intrinsic.Control.CallSub(Exit)
+		
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_BomImport_Part_Exclusion.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Get_Data.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_BomImport_Part_Exclusion.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(Exit)
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Get_Data.End
+
+Program.Sub.Exit.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+
+	'checking if connection is open
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!Con.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.End
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_BomImport_Part_Exclusion.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Exit.End
+
+Program.Sub.Load_BDF.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sFile.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.sCol.Declare(String,"")
+	V.Local.sDataType.Declare(String,"")
+	V.Local.sSplit.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.sTemp.Declare(String,"")
+	V.Local.iCount.Declare(Long,0)
+	
+'	V.Local.sCol.Set("ID*!*chkToggle*!*DisplayPartXML*!*DisplayPartBOM*!*DisplayRevXML*!*DisplayRevBOM*!*PartNoXML*!*PartNoBOM*!*RevisionXML*!*RevisionBOM*!*InvPartXML*!*InvPartBOM*!*DescriptionXML*!*DescriptionBOM*!*AltDescription1XML*!*AltDescription1BOM*!*AltDescription2XML*!*AltDescription2BOM*!*DescExtraXML*!*DescExtraBOM*!*QuantityXML*!*QuantityBOM*!*IssueUMXML*!*IssueUMBOM*!*ConsumptionConvXML*!*ConsumptionConvBOM*!*UMXML*!*UMBOM*!*CostXML*!*CostBOM*!*SourceXML*!*SourceBOM*!*DrawingXML*!*DrawingBOM*!*LeadtimeXML*!*LeadtimeBOM*!*LevelXML*!*LevelBOM*!*LocationXML*!*LocationBOM*!*Memo1XML*!*Memo1BOM*!*Memo2XML*!*Memo2BOM*!*ParentXML*!*ParentBOM*!*ProductlineXML*!*ProductlineBOM*!*SequenceXML*!*SequenceBOM*!*SortCodeXML*!*SortCodeBOM*!*TagXML*!*TagBOM*!*CategoryXML*!*CategoryBOM*!*parttype*!*ebbottomside*!*ebleftside*!*ebtopside*!*ebrightside*!*totallength*!*totalwidth*!*graindir*!*ebpartno.1*!*ebpartno.1qty.*!*ebpartno.2qty.*!*router")
+
+'	V.Local.sDataType.Set("String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String")
+
+	
+	'loading bdf to datatable
+	'changed script to use bdf functions.  2/11/2019 caller temp variable pointing to dirrent location than bom compare.
+	F.Intrinsic.BDF.Load("Main-PreDisplayData-bdf","Main-PreDisplayData-bdf")
+	F.Intrinsic.BDF.Clone("Main-PreDisplayData-bdf","Load")
+	
+	Function.Intrinsic.BDF.READCOLUMNTITLE("Main-PreDisplayData-bdf",V.Local.sCol)
+	
+	F.Intrinsic.String.Split(V.Local.sCol,"*!*",V.Local.sRet)
+	
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.sRet.UBound,1)
+		F.Intrinsic.Control.If(V.Local.sDataType.Trim,=,"")
+			V.Local.sDataType.Set("String")
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("{0}*!*String",V.Local.sDataType,V.Local.sDataType)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	V.Local.sRet.Redim(0,0)
+	
+	F.Intrinsic.BDF.ReadRowCount("Main-PreDisplayData-bdf",V.Local.iCount)
+	F.Intrinsic.Math.Sub(V.Local.iCount,1,V.Local.iCount)
+	F.Intrinsic.Control.For(V.Local.i,0,V.Local.iCount,1)
+		F.Intrinsic.BDF.ReadRow("Main-PreDisplayData-bdf",V.Local.i,V.Local.sTemp)
+		F.Intrinsic.Control.If(V.Local.sRet.Length,=,0)
+			V.Local.sRet.Set(V.Local.sTemp)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sRet,V.Ambient.NewLine,V.Local.sTemp,V.Local.sRet)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	'when built with bdf functions
+	F.Data.DataTable.CreateFromString("BDF",V.Local.sRet,V.Local.sCol,V.Local.sDataType,"|~|",V.Ambient.NewLine,True)
+	'when built from string to file
+'	F.Intrinsic.File.File2String(V.Local.sFile,V.Local.sRet)
+'	F.Intrinsic.String.Build("PreDisplayData{0}",V.Ambient.NewLine,V.Local.sSplit)
+'	F.Intrinsic.String.Split(V.Local.sRet,V.Local.sSplit,V.Local.sRet)
+'	F.Intrinsic.String.Build("{0}PreDisplayData{1} {1}",V.Local.sRet(0),V.Ambient.NewLine,V.Global.sRet)
+'	F.Data.DataTable.CreateFromString("BDF",V.Local.sRet(1),V.Local.sCol,V.Local.sDataType,"|~|",V.Ambient.NewLine,True)
+	
+	F.Data.DataView.Create("BDF","VBDF",22,"ID = ''","")
+	F.Intrinsic.Control.For(V.Local.i,V.DataView.BDF!VBDF.RowCount--,0,-1)
+		F.Data.DataTable.DeleteRow("BDF",V.DataView.BDF!VBDF(V.Local.i).DataTableIndex)
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_BomImport_Part_Exclusion.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Load_BDF.End
+
+Program.Sub.Process_BDF.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.iMaxLvl.Declare(Long,0)
+	V.Local.i.Declare(Long,0)
+	V.Local.sValue.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	V.Local.iCount.Declare(Long,0)
+	V.Local.sFilter.Declare(String,"")
+	V.Local.sParent.Declare(String,"")
+	V.Local.iNextParentID.Declare(Long,0)
+	V.Local.iRow.Declare(Long,0)
+	
+	F.Data.Dataview.SetFilter("BDF","VBDF","")
+	'getting max level in the bom import
+	F.Data.DataView.SetSort("BDF","VBDF","LevelXML desc")
+	F.Intrinsic.Control.For(V.Local.i,0,V.DataView.BDF!VBDF.RowCount--,1)
+		V.Local.sValue.Set(V.DataView.BDF!VBDF(V.Local.i).LevelXML!FieldValTrim)
+		F.Intrinsic.Control.If(V.Local.sValue.IsNumeric)
+			V.Local.iMaxLvl.Set(V.Local.sValue.Long)
+			F.Intrinsic.Control.ExitFor(V.Local.i)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	'getting top parent
+	F.Data.DataView.SetFilter("BDF","VBDF","LevelXML = '0'")
+'	F.Intrinsic.Control.If(V.Caller.User.UCase,=,"SUPERVSR")
+'	
+'		Function.Intrinsic.Debug.InvokeDebugger
+'		Function.Intrinsic.Debug.Stop
+'	F.Intrinsic.Control.EndIf
+
+	F.ODBC.Connection!Con.OpenCompanyConnection
+	'checking if top parent is top parent is on the exclustion list
+	F.Intrinsic.String.Build("Select Part From GCG_4447_Bom_Prt_Exc Where Part = '{0}' and Rev = '{1}'",V.DataView.BDF!VBDF(V.DataView.BDF!VBDF.RowCount--).PartNoXML!FieldValTrim,V.DataView.BDF!VBDF(V.DataView.BDF!VBDF.RowCount--).RevisionXML!FieldValTrim,V.Local.sSql)
+	F.ODBC.Connection!Con.OpenLocalRecordsetRO("rst",V.Local.sSql)
+	F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,False)
+		'if top parent is in the exclusion list uncheck all parts
+		F.Data.DataTable.SetValue("BDF",-1,"chkToggle","True")
+		
+	F.Intrinsic.Control.Else
+		'looping through bdf and checking if the parts are on the exclusion list
+		F.Intrinsic.Control.For(V.Local.i,1,V.Local.iMaxLvl,1)
+			F.Intrinsic.String.Build("LevelXML = '{0}'",V.Local.i,V.Local.sFilter)
+			F.Data.DataView.SetFilter("BDF","VBDF",V.Local.sFilter)
+			F.Intrinsic.Control.For(V.Local.iCount,0,V.DataView.BDF!VBDF.RowCount--,1)
+				F.Intrinsic.String.Build("Select Part From GCG_4447_Bom_Prt_Exc Where Part = '{0}' and Rev = '{1}'",V.DataView.BDF!VBDF(V.Local.iCount).PartNoXML!FieldValTrim,V.DataView.BDF!VBDF(V.Local.iCount).RevisionXML!FieldValTrim,V.Local.sSql)
+				F.ODBC.Connection!Con.OpenLocalRecordsetRO("rstP",V.Local.sSql)
+				F.Intrinsic.Control.If(V.ODBC.con!rstP.EOF,=,False)
+					'flipping the flag to uncheck part from bdf
+					F.Data.DataView.SetValue("BDF","VBDF",V.Local.iCount,"chkToggle","True")
+					'getting seq range to check children of exluded part
+					F.Intrinsic.String.RPad(V.DataView.BDF!VBDF(V.Local.iCount).PartNoXML!FieldValTrim," ",17,V.Local.sParent)
+					F.Intrinsic.String.Build("{0}{1}",V.Local.sParent,V.DataView.BDF!VBDF(V.Local.iCount).RevisionXML!FieldValTrim,V.Local.sParent)
+					F.Intrinsic.Control.If(V.Local.i,=,1)
+						F.Intrinsic.Control.If(V.Local.iCount,<,V.DataView.BDF!VBDF.RowCount--)
+							F.Intrinsic.Math.Add(V.Local.iCount,1,V.Local.iNextParentID)
+							V.Local.iNextParentID.Set(V.DataView.BDF!VBDF(V.Local.iNextParentID).ID!FieldValLong)
+						F.Intrinsic.Control.Else
+							V.Local.iNextParentID.Set(V.DataTable.BDF(V.DataTable.BDF.RowCount--).ID!FieldValLong)
+							F.Intrinsic.Math.Add(V.Local.iNextParentID,1,V.Local.iNextParentID)
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.Else
+						F.Intrinsic.String.Build("LevelXML = '1' and ID > {0}",V.DataView.BDF!VBDF(V.Local.iCount).ID!FieldValLong,V.Local.sFilter)
+						F.Data.DataView.Create("BDF","Temp",22,V.Local.sFilter,"ID")
+						F.Intrinsic.Control.If(V.DataView.BDF!Temp.RowCount--,<>,-1)
+							V.Local.iNextParentID.Set(V.DataView.BDF!Temp(0).ID!FieldValLong)
+						F.Intrinsic.Control.Else
+							V.Local.iNextParentID.Set(V.DataTable.BDF(V.DataTable.BDF.RowCount--).ID!FieldValLong)
+						F.Intrinsic.Control.EndIf
+						F.Data.DataView.Close("BDF","Temp")
+					F.Intrinsic.Control.EndIf
+					'calling sub to flip flag for children
+					F.Intrinsic.Control.CallSub(Process_BDFChildren,"NextParentID",V.Local.iNextParentID,"CurrentID",V.DataView.BDF!VBDF(V.Local.iCount).ID!FieldValLong)
+				F.Intrinsic.Control.EndIf
+				
+				F.ODBC.Con!rstP.Close
+			F.Intrinsic.Control.Next(V.Local.iCount)
+		F.Intrinsic.Control.Next(V.Local.i)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.Con!rst.Close
+	
+	F.Data.DataView.SetFilter("BDF","VBDF","PartNoXML = ''")
+	F.Data.DataView.SetValue("BDF","VBDF",-1,"chkToggle","True")
+		
+	F.ODBC.Connection!Con.Close
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_BomImport_Part_Exclusion.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Process_BDF.End
+
+Program.Sub.Process_BDFChildren.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sFilter.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.iLoop.Declare(Long,0)
+	
+	F.Intrinsic.Math.Sub(V.Args.NextParentID.Long,1,V.Local.iLoop)
+
+	F.Intrinsic.Control.For(V.Local.i,V.Args.CurrentID.Long,V.Local.iLoop,1)
+		F.Intrinsic.String.Build("ID = '{0}'",V.Local.i,V.Local.sFilter)
+		
+		F.Data.DataView.Create("BDF","VCBDF",22,V.Local.sFilter,"")
+		'setting the childen toggle flag to true if parent is in the exlusion table
+		F.Intrinsic.Control.If(V.DataView.BDF!VCBDF.RowCount--,<>,-1)
+			F.Data.DataView.SetValue("BDF","VCBDF",-1,"chkToggle","True")
+		F.Intrinsic.Control.EndIf
+		
+		F.Data.DataView.Close("BDF","VCBDF")
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_BomImport_Part_Exclusion.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Process_BDFChildren.End
+
+Program.Sub.Rebuild_BDF.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sCol.Declare(String,"")
+	V.Local.sData.Declare(String,"")
+	V.Local.sFile.Declare(String,"")
+	V.Local.bRet.Declare(Boolean,False)
+	V.Local.sRow.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.iCol.Declare(Long,0)
+	
+	'rebuilding bdf
+'	V.Local.sCol.Set("ID*!*chkToggle*!*PartNoXML*!*PartNoBOM*!*RevisionXML*!*RevisionBOM*!*InvPartXML*!*InvPartBOM*!*DescriptionXML*!*DescriptionBOM*!*QuantityXML*!*QuantityBOM*!*UMXML*!*UMBOM*!*CostXML*!*CostBOM*!*SourceXML*!*SourceBOM*!*DrawingXML*!*DrawingBOM*!*LeadtimeXML*!*LeadtimeBOM*!*LevelXML*!*LevelBOM*!*LocationXML*!*LocationBOM*!*Memo1XML*!*Memo1BOM*!*Memo2XML*!*Memo2BOM*!*ParentXML*!*ParentBOM*!*ProductlineXML*!*ProductlineBOM*!*SequenceXML*!*SequenceBOM*!*SortCodeXML*!*SortCodeBOM*!*TagXML*!*TagBOM*!*CategoryXML*!*CategoryBOM*!*parttype*!*ebbottomside*!*ebleftside*!*ebtopside*!*ebrightside*!*totallength*!*totalwidth*!*graindir*!*ebpartno.1*!*ebpartno.1qty.*!*ebpartno.2qty.*!*router")
+
+	Function.Intrinsic.BDF.READCOLUMNTITLE("Main-PreDisplayData-bdf",V.Local.sCol)
+	
+	F.Intrinsic.String.Build("{0}\{1}",V.Caller.LocalGSSTempDir,V.Passed.Main-PreDisplayData-bdf,V.Local.sFile)
+	
+	F.Data.DataView.SetFilter("BDF","VBDF","")
+	F.Data.DataView.SetSort("BDF","VBDF","")
+	
+	F.Intrinsic.Control.If(V.DataView.BDF!VBDF.RowCount--,<>,-1)
+'		F.Data.DataView.ToString("BDF","VBDF",V.Local.sCol,"|~|",V.Ambient.NewLine,V.Local.sData)
+'		F.Intrinsic.String.Build("{0}{1}",V.Global.sRet,V.Local.sData,V.Local.sData)
+'		F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bRet)
+'		F.Intrinsic.Control.If(V.Local.bRet)
+'			'deleting old bdf
+'			F.Intrinsic.File.DeleteFile(V.Local.sFile)
+'		F.Intrinsic.Control.EndIf
+'		'saving new bdf
+'		F.Intrinsic.String.Build("V1.00{0}140{0}64{0}PreDisplayData{0}{0}ID|~|chkToggle|~|PartNoXML|~|PartNoBOM|~|RevisionXML|~|RevisionBOM|~|InvPartXML|~|InvPartBOM|~|DescriptionXML|~|DescriptionBOM|~|AltDescription1XML|~|AltDescription1BOM|~|AltDescription2XML|~|AltDescription2BOM|~|DescExtraXML|~|DescExtraBOM|~|QuantityXML|~|QuantityBOM|~|IssueUMXML|~|IssueUMBOM|~|ConsumptionConvXML|~|ConsumptionConvBOM|~|UMXML|~|UMBOM|~|CostXML|~|CostBOM|~|SourceXML|~|SourceBOM|~|DrawingXML|~|DrawingBOM|~|LeadtimeXML|~|LeadtimeBOM|~|LevelXML|~|LevelBOM|~|LocationXML|~|LocationBOM|~|Memo1XML|~|Memo1BOM|~|Memo2XML|~|Memo2BOM|~|ParentXML|~|ParentBOM|~|ProductlineXML|~|ProductlineBOM|~|SequenceXML|~|SequenceBOM|~|SortCodeXML|~|SortCodeBOM|~|TagXML|~|TagBOM|~|CategoryXML|~|CategoryBOM|~|parttype|~|ebbottomside|~|ebleftside|~|ebtopside|~|ebrightside|~|totallength|~|totalwidth|~|graindir|~|ebpartno.1|~|ebpartno.1qty.|~|ebpartno.2qty.|~|router{0}N|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|F|~|F|~|S|~|S|~|F|~|F|~|S|~|S|~|F|~|F|~|S|~|S|~|S|~|S|~|F|~|F|~|N|~|N|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|N|~|N|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S|~|S{0}{1}",V.Ambient.NewLine,V.Local.sData,V.Local.sData)
+'		F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sData)
+		F.Intrinsic.BDF.Clone("Main-PreDisplayData-bdf","TempBDF")
+		
+		Function.Intrinsic.Control.For(v.Local.i,0,V.DataTable.BDF.RowCount--,1)
+			V.Local.sRow.Set(V.DataTable.BDF(V.Local.i).FullRow)
+			F.Intrinsic.String.Replace(v.Local.sRow,"*!*","|~|",v.Local.sRow)
+			F.Intrinsic.BDF.WriteRow("TempBDF",v.Local.sRow)
+		F.Intrinsic.Control.Next(v.Local.i)
+
+		F.Intrinsic.BDF.Save("TempBDF","Main-PreDisplayData-bdf")
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_BomImport_Part_Exclusion.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+Function.Intrinsic.Control.EndTry
+Program.Sub.Rebuild_BDF.End
