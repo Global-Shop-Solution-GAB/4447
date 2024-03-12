@@ -1,0 +1,886 @@
+Program.Sub.Preflight.Start
+v.Global.sLogFile.Declare(String)
+v.Global.sPIDFile.Declare(String)
+v.Global.sCompleteFile.Declare(String)
+v.Global.sLogText.Declare(String)
+v.Global.sProcessedFile.Declare(String)
+v.Global.sErrorFile.Declare(String)
+v.Global.sBackup.Declare(String)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+f.Intrinsic.Control.Try
+
+v.Local.bExist.Declare(Boolean)
+v.Local.sPID.Declare(String)
+
+f.ODBC.Connection!Con.OpenConnection(v.Ambient.PDSN,v.Ambient.PUser,v.Ambient.PPass)
+
+'this will be run from the post process hook Async on online update hook 38130
+'First thing we need to do is check for PID because this is running Async on Online Update Hook.
+f.Intrinsic.String.Build("{0}\GCG_4447_PID.txt",v.Caller.FilesDir,v.Global.sPIDFile)
+f.Intrinsic.File.Exists(v.Global.sPIDFile,v.Local.bExist)
+f.Intrinsic.Control.If(v.Local.bExist,=,True)
+	'The PID file exists so we need to see if it has a PID active.
+	f.Intrinsic.File.File2String(v.Global.sPIDFile,v.Local.sPID)
+	f.Intrinsic.Control.If(v.Local.sPID.Trim,=,"")
+		'No PID active so set ours and keep going
+		f.Intrinsic.File.String2File(v.Global.sPIDFile,v.Ambient.PID)
+	f.Intrinsic.Control.Else
+		'PID in file so we need to see if it is active.
+		f.Intrinsic.Task.PIDRunning(v.Local.sPID.Trim,v.Local.bExist)
+		f.Intrinsic.Control.If(v.Local.bExist,=,True)
+			'PID is running so we need to kill our program.
+			f.Intrinsic.Control.CallSub(Unload)
+		f.Intrinsic.Control.Else
+			'PID is not running so we can update it to our PID
+			f.Intrinsic.File.String2File(v.Global.sPIDFile,v.Ambient.PID)
+		f.Intrinsic.Control.EndIf
+	f.Intrinsic.Control.EndIf
+f.Intrinsic.Control.Else
+	'File does not exist so just put our PID in it to create it.
+	f.Intrinsic.File.String2File(v.Global.sPIDFile,v.Ambient.PID)
+f.Intrinsic.Control.EndIf
+
+'We need to get the Complete path
+f.Intrinsic.Control.CallSub(GetFilePaths)
+'We now have LogFile, PIDFile, and CompleteFile paths populated so we can use anywhere.
+'To prove it I will write to the Log file saying we are ready... 
+'f.Intrinsic.String.Build("{0}:::PID {1} set and Complete Path set to {2} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Ambient.PID,v.Global.sCompleteFile,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+'I hope it didn't error....
+
+'Now we need to open all of the files and start issuing and moving the files around.
+f.Intrinsic.Control.CallSub(FileList)
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(TryCatch,"Sub",V.Ambient.CurrentSubroutine,"Error",V.Ambient.ErrorNumber,"Desc",V.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.TryCatch.Start
+v.Local.sError.Declare(String)
+Function.Intrinsic.String.Concat("Project: GCG_4447_SN_To_GSS_IssueMaterial.g2u",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",v.Args.Sub,V.Ambient.NewLine,"Error Occurred ",V.Args.Error," with description ",v.Args.Desc,V.Local.sError)
+'Write to Error Log
+f.Intrinsic.Control.If(v.Global.sLogFile,<>,"")
+'	f.Intrinsic.String.Build("{0}::: {1} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Local.sError,v.Global.sLogText)
+'	f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+	'We know we have the PID set because we have the LogFile information so delete the PID
+	'Clear out PID out of the file.
+	f.Intrinsic.File.String2File(v.Global.sPIDFile,"")
+f.Intrinsic.Control.EndIf
+
+
+f.Intrinsic.Control.CallSub(Unload)
+Program.Sub.TryCatch.End
+
+Program.Sub.Unload.Start
+f.Intrinsic.Control.Try
+V.Local.bExists.Declare(Boolean,False)
+
+f.Intrinsic.String.Build("{0}\GCG_4447_PID.txt",v.Caller.FilesDir,v.Global.sPIDFile)
+f.Intrinsic.File.Exists(v.Global.sPIDFile,v.Local.bExist)
+f.Intrinsic.Control.If(v.Local.bExist,=,True)
+	F.Intrinsic.File.DeleteFile(V.Global.sPIDFile)
+F.Intrinsic.Control.EndIf
+
+f.ODBC.Connection!Con.Close
+f.Intrinsic.Control.End
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.End
+f.Intrinsic.Control.EndTry
+Program.Sub.Unload.End
+
+Program.Sub.GetFilePaths.Start
+f.Intrinsic.Control.Try
+
+v.Local.sFile.Declare(String)
+v.Local.bExist.Declare(Boolean)
+v.Local.iCount.Declare(Long)
+v.Local.sRet.Declare(String)
+v.Local.sHold.Declare(String)
+V.Local.sSql.Declare(String)
+
+F.Intrinsic.String.Build("Select Complete_Dir From GCG_4447_Sigma_Dir Where Company = '{0}'",V.Caller.CompanyCode,V.Local.sSql)
+F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSql,V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet.Length,>,0)
+	v.Global.sCompleteFile.Set(v.Local.sRet)
+	f.Intrinsic.Control.If(v.Global.sCompleteFile.Right1,=,"\")
+		f.Intrinsic.String.Build("{0}Processed\",v.Global.sCompleteFile,v.Global.sProcessedFile)
+	f.Intrinsic.Control.Else
+		f.Intrinsic.String.Build("{0}\Processed\",v.Global.sCompleteFile,v.Global.sProcessedFile)
+	f.Intrinsic.Control.EndIf
+	
+	f.Intrinsic.File.DirExists(v.Global.sCompleteFile,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist,=,False)
+		F.Intrinsic.File.CreateDir(v.Global.sProcessedFile)
+	F.Intrinsic.Control.EndIf
+	
+	f.Intrinsic.Control.If(v.Global.sCompleteFile.Right1,=,"\")
+		f.Intrinsic.String.Build("{0}Error\",v.Global.sCompleteFile,v.Global.sErrorFile)
+	f.Intrinsic.Control.Else
+		f.Intrinsic.String.Build("{0}\Error\",v.Global.sCompleteFile,v.Global.sErrorFile)
+	f.Intrinsic.Control.EndIf
+
+	F.Intrinsic.File.DirExists(v.Global.sErrorFile,V.Local.bExist)
+	F.Intrinsic.Control.If(V.Local.bExist,=,False)
+		F.Intrinsic.File.CreateDir(v.Global.sErrorFile)
+	F.Intrinsic.Control.EndIf
+	
+	f.Intrinsic.Control.If(v.Global.sCompleteFile.Right1,=,"\")
+		f.Intrinsic.String.Build("{0}Backup",v.Global.sCompleteFile,v.Global.sBackup)
+	f.Intrinsic.Control.Else
+		f.Intrinsic.String.Build("{0}\Backup",v.Global.sCompleteFile,v.Global.sBackup)
+	f.Intrinsic.Control.EndIf
+	f.Intrinsic.File.DirExists(v.Global.sBackup,v.Local.bExist)
+	f.Intrinsic.Control.If(v.Local.bExist,=,False)
+		'Directory doesn't exist so create it
+		f.Intrinsic.File.CreateDir(v.Global.sBackup)
+	f.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("Go to Shop Floor Control > File > SigmaNest File Maintenance to set up Directories","Warning")
+	f.Intrinsic.File.String2File(v.Global.sPIDFile,"")
+	f.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+
+''We need to read in Complete and Remnants Paths.
+''We have them stored in SNLIC.dat in Global\Files path.
+'f.Intrinsic.String.Build("{0}\SNLIC.dat",v.Caller.FilesDir,v.Local.sFile)
+'f.Intrinsic.File.Exists(v.Local.sFile,v.Local.bExist)
+'f.Intrinsic.Control.If(v.Local.bExist,=,False)
+'	'File doesn't exist so we need to tell them to create it and end the program.
+''	f.Intrinsic.UI.Msgbox("File SNLIC.dat in Global\Files directory does not exist. Pleace create it and add COMPLETE:: and REMNANTS:: paths to it.","Attenditon!")
+'	f.Intrinsic.File.String2File(v.Global.sPIDFile,"")
+'	f.Intrinsic.Control.CallSub(Unload)
+'f.Intrinsic.Control.EndIf
+''File exists so we need to read it set the file paths.
+'f.Intrinsic.File.File2String(v.Local.sFile,v.Local.sFile)
+'f.Intrinsic.String.Split(v.Local.sFile,v.Ambient.NewLine,v.Local.sFile)
+'f.Intrinsic.Control.For(v.Local.iCount,0,v.Local.sFile.UBound,1)
+'	f.Intrinsic.Control.SelectCase(v.Local.sFile(v.Local.iCount).Left8)
+'		f.Intrinsic.Control.Case("COMPLETE")
+'			'We have the Input location, split it and get the path.
+'			f.Intrinsic.String.Split(v.Local.sFile(v.Local.iCount),"::",v.Local.sRet)
+'			v.Local.sRet.RedimPreserve(0,1)
+'			v.Global.sCompleteFile.Set(v.Local.sRet(1).Trim)
+'			v.Local.sRet.Redim(0,0)
+'			'Check to make sure the folder exists.
+'			f.Intrinsic.File.DirExists(v.Global.sCompleteFile,v.Local.bExist)
+'			f.Intrinsic.Control.If(v.Local.bExist,=,True)
+'				'We are going to build the Log folder off of the Complete folder
+''				f.Intrinsic.Control.If(v.Global.sCompleteFile.Right1,=,"\")
+''					f.Intrinsic.String.Build("{0}Log",v.Global.sCompleteFile,v.Global.sLogFile)
+''				f.Intrinsic.Control.Else
+''					f.Intrinsic.String.Build("{0}\Log",v.Global.sCompleteFile,v.Global.sLogFile)
+''				f.Intrinsic.Control.EndIf
+'				'Check to make sure the folder exists.
+''				f.Intrinsic.File.DirExists(v.Global.sLogFile,v.Local.bExist)
+''				f.Intrinsic.Control.If(v.Local.bExist,=,True)
+''					'Folder exists so add the file to the path.
+''					f.Intrinsic.String.Build("{0}\GCG_4447_{1}.txt",v.Global.sLogFile,v.Ambient.Date.FormatMMDDYYYY,v.Global.sLogFile)
+''					'Check to see if the file exists for today.
+''					f.Intrinsic.File.Exists(v.Global.sLogFile,v.Local.bExist)
+''					f.Intrinsic.Control.If(v.Local.bExist,=,False)
+''						'File doesn't exists so create it
+''						f.Intrinsic.File.String2File(v.Global.sLogFile,"")
+''					f.Intrinsic.Control.EndIf
+''				f.Intrinsic.Control.Else
+''					'Folder does not exist so create it
+''					f.Intrinsic.File.CreateDir(v.Global.sLogFile)
+''					f.Intrinsic.File.DirExists(v.Global.sLogFile,v.Local.bExist)
+''					f.Intrinsic.Control.If(v.Local.bExist,=,True)
+''						'Folder exists now so add the file to the path.
+''						f.Intrinsic.String.Build("{0}\GCG_4447_{1}.txt",v.Global.sLogFile,v.Ambient.Date.FormatMMDDYYYY,v.Global.sLogFile)
+''						'Check to see if the file exists for today.
+''						f.Intrinsic.File.Exists(v.Global.sLogFile,v.Local.bExist)
+''						f.Intrinsic.Control.If(v.Local.bExist,=,False)
+''							'File doesn't exists so create it
+''							f.Intrinsic.File.String2File(v.Global.sLogFile,"")
+''						f.Intrinsic.Control.EndIf
+''					f.Intrinsic.Control.Else
+''						'Can't create the folder so end?
+''						f.Intrinsic.File.String2File(v.Global.sPIDFile,"")
+''						f.Intrinsic.Control.CallSub(Unload)
+''					f.Intrinsic.Control.EndIf
+''				f.Intrinsic.Control.EndIf
+'			f.Intrinsic.Control.Else
+'				'Create the folder?
+'				f.Intrinsic.File.CreateDir(v.Global.sCompleteFile)
+'				f.Intrinsic.File.DirExists(v.Global.sCompleteFile,v.Local.bExist)
+'				f.Intrinsic.Control.If(v.Local.bExist,=,True)
+''					'We are going to build the Log folder off of the Complete folder
+''					f.Intrinsic.Control.If(v.Global.sCompleteFile.Right1,=,"\")
+''						f.Intrinsic.String.Build("{0}Log",v.Global.sCompleteFile,v.Global.sLogFile)
+''					f.Intrinsic.Control.Else
+''						f.Intrinsic.String.Build("{0}\Log",v.Global.sCompleteFile,v.Global.sLogFile)
+''					f.Intrinsic.Control.EndIf
+''					'Check to make sure the folder exists.
+''					f.Intrinsic.File.DirExists(v.Global.sLogFile,v.Local.bExist)
+''					f.Intrinsic.Control.If(v.Local.bExist,=,True)
+''						'Folder exists so add the file to the path.
+''						f.Intrinsic.String.Build("{0}\GCG_4447_{1}.txt",v.Global.sLogFile,v.Ambient.Date.FormatMMDDYYYY,v.Global.sLogFile)
+''						'Check to see if the file exists for today.
+''						f.Intrinsic.File.Exists(v.Global.sLogFile,v.Local.bExist)
+''						f.Intrinsic.Control.If(v.Local.bExist,=,False)
+''							'File doesn't exists so create it
+''							f.Intrinsic.File.String2File(v.Global.sLogFile,"")
+''						f.Intrinsic.Control.EndIf
+''					f.Intrinsic.Control.Else
+''						'Folder does not exist so create it
+''						f.Intrinsic.File.CreateDir(v.Global.sLogFile)
+''						f.Intrinsic.File.DirExists(v.Global.sLogFile,v.Local.bExist)
+''						f.Intrinsic.Control.If(v.Local.bExist,=,True)
+''							'Folder exists now so add the file to the path.
+''							f.Intrinsic.String.Build("{0}\GCG_4447_{1}.txt",v.Global.sLogFile,v.Ambient.Date.FormatMMDDYYYY,v.Global.sLogFile)
+''							'Check to see if the file exists for today.
+''							f.Intrinsic.File.Exists(v.Global.sLogFile,v.Local.bExist)
+''							f.Intrinsic.Control.If(v.Local.bExist,=,False)
+''								'File doesn't exists so create it
+''								f.Intrinsic.File.String2File(v.Global.sLogFile,"")
+''							f.Intrinsic.Control.EndIf
+''						f.Intrinsic.Control.Else
+''							'Can't create the folder so end?
+''							f.Intrinsic.File.String2File(v.Global.sPIDFile,"")
+''							f.Intrinsic.Control.CallSub(Unload)
+''						f.Intrinsic.Control.EndIf
+''					f.Intrinsic.Control.EndIf
+'				f.Intrinsic.Control.Else
+'					'Can't create folder so end?
+'					f.Intrinsic.File.String2File(v.Global.sPIDFile,"")
+'					f.Intrinsic.Control.CallSub(Unload)
+'				f.Intrinsic.Control.EndIf
+'			f.Intrinsic.Control.EndIf
+'			'Now that we know everything exists lets quickly make the Error and Processed folders if they don't exist
+'			f.Intrinsic.Control.If(v.Global.sCompleteFile.Right1,=,"\")
+'				f.Intrinsic.String.Build("{0}Processed",v.Global.sCompleteFile,v.Global.sProcessedFile)
+'			f.Intrinsic.Control.Else
+'				f.Intrinsic.String.Build("{0}\Processed",v.Global.sCompleteFile,v.Global.sProcessedFile)
+'			f.Intrinsic.Control.EndIf
+'			f.Intrinsic.File.DirExists(v.Global.sProcessedFile,v.Local.bExist)
+'			f.Intrinsic.Control.If(v.Local.bExist,=,False)
+'				'Directory doesn't exist so create it
+'				f.Intrinsic.File.CreateDir(v.Global.sProcessedFile)
+'			f.Intrinsic.Control.EndIf
+'			
+'			f.Intrinsic.Control.If(v.Global.sCompleteFile.Right1,=,"\")
+'				f.Intrinsic.String.Build("{0}Error",v.Global.sCompleteFile,v.Global.sErrorFile)
+'			f.Intrinsic.Control.Else
+'				f.Intrinsic.String.Build("{0}\Error",v.Global.sCompleteFile,v.Global.sErrorFile)
+'			f.Intrinsic.Control.EndIf
+'			f.Intrinsic.File.DirExists(v.Global.sErrorFile,v.Local.bExist)
+'			f.Intrinsic.Control.If(v.Local.bExist,=,False)
+'				'Directory doesn't exist so create it
+'				f.Intrinsic.File.CreateDir(v.Global.sErrorFile)
+'			f.Intrinsic.Control.EndIf
+'			
+'			f.Intrinsic.Control.If(v.Global.sCompleteFile.Right1,=,"\")
+'				f.Intrinsic.String.Build("{0}Backup",v.Global.sCompleteFile,v.Global.sBackup)
+'			f.Intrinsic.Control.Else
+'				f.Intrinsic.String.Build("{0}\Backup",v.Global.sCompleteFile,v.Global.sBackup)
+'			f.Intrinsic.Control.EndIf
+'			f.Intrinsic.File.DirExists(v.Global.sBackup,v.Local.bExist)
+'			f.Intrinsic.Control.If(v.Local.bExist,=,False)
+'				'Directory doesn't exist so create it
+'				f.Intrinsic.File.CreateDir(v.Global.sBackup)
+'			f.Intrinsic.Control.EndIf
+'			
+'			
+'		f.Intrinsic.Control.Case("REMNANTS")
+'			'We have Remnants, but right now we are not doing anything with it.
+'			
+'	f.Intrinsic.Control.EndSelect
+'f.Intrinsic.Control.Next(v.Local.iCount)
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(TryCatch,"Sub",V.Ambient.CurrentSubroutine,"Error",V.Ambient.ErrorNumber,"Desc",V.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.GetFilePaths.End
+
+Program.Sub.FileList.Start
+f.Intrinsic.Control.Try
+
+v.Local.sFileList.Declare(String)
+v.Local.iCount.Declare(Long)
+
+'Get the List of files
+f.Intrinsic.String.Build("{0}\",v.Global.sCompleteFile,v.Global.sCompleteFile)
+f.Intrinsic.File.GetFileList(v.Global.sCompleteFile,v.Local.sFileList)
+
+'f.Intrinsic.String.Build("{0}:::Grabbed all the Files -- {1} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Local.sFileList,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+
+'We need to split the list with : and loop through each one so we can read each file.
+f.Intrinsic.String.Split(v.Local.sFileList,":",v.Local.sFileList)
+f.Intrinsic.Control.For(v.Local.iCount,0,v.Local.sFileList.UBound,1)
+	'Lets make sure it is a txt? file
+	f.Intrinsic.Control.If(v.Local.sFileList(v.Local.iCount).Right4,=,".csv")
+		'We will send the File name to the Issue Sub where we will issue the material and move the files.
+		f.Intrinsic.Control.CallSub(ReadFile,"FilePath",v.Local.sFileList(v.Local.iCount))
+	f.Intrinsic.Control.EndIf
+f.Intrinsic.Control.Next(v.Local.iCount)
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(TryCatch,"Sub",V.Ambient.CurrentSubroutine,"Error",V.Ambient.ErrorNumber,"Desc",V.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.FileList.End
+
+Program.Sub.ReadFile.Start
+f.Intrinsic.Control.Try
+
+v.Local.sLines.Declare(String)
+v.Local.sRet.Declare(String)
+v.Local.sHold.Declare(String)
+v.Local.iCount.Declare(Long)
+v.Local.iCountm.Declare(Long)
+v.Local.sMOPEN.Declare(String)
+v.Local.sBackupMOPEN.Declare(String)
+v.Local.sSQL.Declare(String)
+v.Local.dHours.Declare(Date)
+v.Local.sTimeIn.Declare(String)
+v.Local.sTimeOut.Declare(String)
+v.Local.fHours.Declare(Float)
+v.Local.dStart.Declare(Date)
+v.Local.sQty.Declare(String)
+v.Local.sSeq.Declare(String)
+V.Local.sTemp.Declare(String)
+V.Local.sErrorFile.Declare(String)
+V.Local.sFieldMap.Declare(String)
+V.Local.iRet.Declare(Long)
+V.Local.sRejectRet.Declare(String)
+v.Local.fActHrs.Declare(Float)
+v.Local.sJobTemp.Declare(String)
+v.Local.iTemp.Declare(Long)
+v.Local.sQtyIssue.Declare(string)
+v.Local.fQtyIssue.Declare(Float)
+v.Local.bCheck.Declare(boolean)
+V.Local.sJSSI.Declare(String)
+
+F.Intrinsic.String.Build("JOBNUMBER@!@JOBNUMBER*!*PROGRAMNUMBER@!@PROGRAMNUMBER*!*PARTNUMBER@!@PARTNUMBER*!*QTYORDERED@!@QTYORDERED*!*QTYONPROGRAM@!@QTYONPROGRAM*!*OnePartCutTime_Hrs@!@OnePartCutTime_Hrs*!*NESTEDAREA_in2_Ea_Part@!@NESTEDAREA*!*NESTEDWEIGHT_Total_Lbs@!@NESTEDWEIGHT*!*SHEETNAME@!@SHEETNAME","",V.Local.sFieldMap)
+F.Intrinsic.String.Build("{0}*!*PROGRAM_SCRAP_PERTAGE@!@PROGRAM_SCRAPPERTAGE*!*MACHINE@!@MACHINE*!*SHT_LOCATION@!@SHT_LOCATION*!*SHT_HEATNUM@!@SHT_HEATNUM*!*SHT_BinNum@!@SHT_BinNum*!*SHT_Mil@!@SHT_Mil*!*PRT_Data1@!@PRT_Data1*!*PRT_Data2@!@PRT_Data2*!*PRT_Data3@!@PRT_Data3*!*PRT_Data4@!@PRT_Data4*!*PRT_Data5@!@PRT_Data5",V.Local.sFieldMap,V.Local.sFieldMap)
+F.Intrinsic.String.Build("{0}*!*PRT_Data6@!@PRT_Data6*!*PRT_Data7@!@PRT_Data7*!*PRT_Data8@!@PRT_Data8*!*PRT_Data9@!@PRT_Data9*!*PRT_Data10@!@PRT_Data10*!*PRT_Data11@!@PRT_Data11*!*PRT_Data12@!@PRT_Data12*!*PRT_Data13@!@PRT_Data13*!*PRT_Data14@!@PRT_Data14*!*Sht_Total_Area@!@Sht_Total_Area*!*True_Part_Weight@!@True_Part_Weight",V.Local.sFieldMap,V.Local.sFieldMap)
+F.Intrinsic.String.Build("{0}*!*MachineNumber@!@MachineNumber*!*Sht_PrimeCode@!@Sht_PrimeCode*!*UsedArea@!@UsedArea*!*TaskName@!@TaskName*!*Material@!@Material*!*Thickness@!@Thickness*!*Errors@!@Errors*!*Rec_No@!@Rec_No",V.Local.sFieldMap,V.Local.sFieldMap)
+
+'Create our Issue Material DT
+f.Data.DataTable.Create("IssueMaterial",True)
+f.Data.DataTable.AddColumn("IssueMaterial","Part","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Rev","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Loc","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Qty","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Lot","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Bin","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Heat","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Serial","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Job","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Suffix","String")
+f.Data.DataTable.AddColumn("IssueMaterial","Seq","String")
+
+'Create our Reject Issue Material DT
+f.Data.DataTable.Create("RejectIssueMaterial",True)
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Part","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Rev","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Loc","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Qty","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Lot","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Bin","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Heat","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Serial","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Job","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Suffix","String")
+f.Data.DataTable.AddColumn("RejectIssueMaterial","Seq","String")
+
+'Create our Issue Labor DT
+f.Data.DataTable.Create("IssueLabor",True)
+f.Data.DataTable.AddColumn("IssueLabor","Date","String")
+f.Data.DataTable.AddColumn("IssueLabor","Employee","String")
+f.Data.DataTable.AddColumn("IssueLabor","Job","String")
+f.Data.DataTable.AddColumn("IssueLabor","Suffix","String")
+f.Data.DataTable.AddColumn("IssueLabor","Seq","String")
+f.Data.DataTable.AddColumn("IssueLabor","WorkCenter","String")
+f.Data.DataTable.AddColumn("IssueLabor","Hours","String")
+f.Data.DataTable.AddColumn("IssueLabor","Closed","String")
+f.Data.DataTable.AddColumn("IssueLabor","Indirect","String")
+f.Data.DataTable.AddColumn("IssueLabor","StartTime","String")
+f.Data.DataTable.AddColumn("IssueLabor","StopTime","String")
+f.Data.DataTable.AddColumn("IssueLabor","RateType","String")
+f.Data.DataTable.AddColumn("IssueLabor","GoodPcs","String")
+f.Data.DataTable.AddColumn("IssueLabor","ScrapPcs","String")
+f.Data.DataTable.AddColumn("IssueLabor","Reason","String")
+
+'Create our Issue Labor DT
+f.Data.DataTable.Create("RejectIssueLabor",True)
+f.Data.DataTable.AddColumn("RejectIssueLabor","Date","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","Employee","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","Job","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","Suffix","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","Seq","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","WorkCenter","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","Hours","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","Closed","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","Indirect","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","StartTime","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","StopTime","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","RateType","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","GoodPcs","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","ScrapPcs","String")
+f.Data.DataTable.AddColumn("RejectIssueLabor","Reason","String")
+
+'We need to read the file in to string
+f.Intrinsic.String.Build("{0}{1}",v.Global.sCompleteFile,v.Args.FilePath,v.Local.sRet)
+
+f.Intrinsic.File.File2String(v.Local.sRet,v.Local.sLines)
+V.Local.sRet.Set("")
+'f.Intrinsic.String.Build("{0}:::Read in File -- {1} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Args.FilePath,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+
+'We can put this into a DT
+F.Intrinsic.Control.Try
+	F.Intrinsic.String.Replace(V.Local.sLines," ","",V.Local.sLines)
+	f.Data.DataTable.CreateFromString("File",v.Local.sLines,"JOBNUMBER*!*PROGRAMNUMBER*!*PARTNUMBER*!*QTYORDERED*!*QTYONPROGRAM*!*OnePartCutTime_Hrs*!*NESTEDAREA_in2_Ea_Part*!*NESTEDWEIGHT_Total_Lbs*!*SHEETNAME*!*PROGRAM_SCRAP_PERTAGE*!*MACHINE*!*SHT_LOCATION*!*SHT_HEATNUM*!*SHT_BinNum*!*SHT_Mil*!*PRT_Data1*!*PRT_Data2*!*PRT_Data3*!*PRT_Data4*!*PRT_Data5*!*PRT_Data6*!*PRT_Data7*!*PRT_Data8*!*PRT_Data9*!*PRT_Data10*!*PRT_Data11*!*PRT_Data12*!*PRT_Data13*!*PRT_Data14*!*Sht_Total_Area*!*True_Part_Weight*!*MachineNumber*!*Sht_PrimeCode*!*UsedArea*!*TaskName*!*Material*!*Thickness*!*Rec_No@!@Rec_No","String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String",",",v.Ambient.NewLine,True)
+F.Intrinsic.Control.Catch
+	F.Data.DataTable.DeleteRow("File")
+	F.Data.DataTable.AcceptChanges("File")
+	'to many columns being passed in csv. now going to loop through and build the datatable and create a error csv for the line(s) that is causing the issue.
+	F.Intrinsic.String.Split(V.Local.sLines,V.Ambient.NewLine,V.Local.sLines)
+	F.Intrinsic.Control.For(V.Local.iCount,0,V.Local.sLines.UBound,1)
+		F.Intrinsic.String.Split(V.Local.sLines(V.Local.iCount),",",V.Local.sTemp)
+		F.Intrinsic.Control.If(V.DataTable.File.Exists,=,False)
+			F.Intrinsic.Control.If(V.Local.sTemp.UBound,<=,36)
+				f.Data.DataTable.CreateFromString("File",v.Local.sLines(V.Local.iCount),"JOBNUMBER*!*PROGRAMNUMBER*!*PARTNUMBER*!*QTYORDERED*!*QTYONPROGRAM*!*OnePartCutTime_Hrs*!*NESTEDAREA_in2_Ea_Part*!*NESTEDWEIGHT_Total_Lbs*!*SHEETNAME*!*PROGRAM_SCRAP_PERTAGE*!*MACHINE*!*SHT_LOCATION*!*SHT_HEATNUM*!*SHT_BinNum*!*SHT_Mil*!*PRT_Data1*!*PRT_Data2*!*PRT_Data3*!*PRT_Data4*!*PRT_Data5*!*PRT_Data6*!*PRT_Data7*!*PRT_Data8*!*PRT_Data9*!*PRT_Data10*!*PRT_Data11*!*PRT_Data12*!*PRT_Data13*!*PRT_Data14*!*Sht_Total_Area*!*True_Part_Weight*!*MachineNumber*!*Sht_PrimeCode*!*UsedArea*!*TaskName*!*Material*!*Thickness","String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String",",",v.Ambient.NewLine,True)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.If(V.Local.sErrorFile.Length,=,0)
+					V.Local.sErrorFile.Set(V.Local.sLines(V.Local.iCount))
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sErrorFile,V.Ambient.NewLine,V.Local.sLines(V.Local.iCount),V.Local.sErrorFile)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.If(V.Local.sTemp.UBound,<=,36)
+				f.Data.DataTable.CreateFromString("TempFile",v.Local.sLines(V.Local.iCount),"JOBNUMBER*!*PROGRAMNUMBER*!*PARTNUMBER*!*QTYORDERED*!*QTYONPROGRAM*!*OnePartCutTime_Hrs*!*NESTEDAREA_in2_Ea_Part*!*NESTEDWEIGHT_Total_Lbs*!*SHEETNAME*!*PROGRAM_SCRAP_PERTAGE*!*MACHINE*!*SHT_LOCATION*!*SHT_HEATNUM*!*SHT_BinNum*!*SHT_Mil*!*PRT_Data1*!*PRT_Data2*!*PRT_Data3*!*PRT_Data4*!*PRT_Data5*!*PRT_Data6*!*PRT_Data7*!*PRT_Data8*!*PRT_Data9*!*PRT_Data10*!*PRT_Data11*!*PRT_Data12*!*PRT_Data13*!*PRT_Data14*!*Sht_Total_Area*!*True_Part_Weight*!*MachineNumber*!*Sht_PrimeCode*!*UsedArea*!*TaskName*!*Material*!*Thickness","String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String*!*String",",",v.Ambient.NewLine,True)
+				F.Data.DataTable.Merge("TempFile","File",False,2)
+				F.Data.DataTable.Close("TempFile")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.If(V.Local.sErrorFile.Length,=,0)
+					V.Local.sErrorFile.Set(V.Local.sLines(V.Local.iCount))
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sErrorFile,V.Ambient.NewLine,V.Local.sLines(V.Local.iCount),V.Local.sErrorFile)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCount)
+F.Intrinsic.Control.EndTry
+
+F.Intrinsic.Control.If(V.Local.sErrorFile.Length,>,0)
+	F.Intrinsic.String.Build("JOBNUMBER,PROGRAMNUMBER,PARTNUMBER,QTYORDERED,QTYONPROGRAM,OnePartCutTime_Hrs,NESTEDAREA_in2_Ea_Part,NESTEDWEIGHT_Total_Lbs,SHEETNAME,PROGRAM_SCRAP_PERTAGE,MACHINE,SHT_LOCATION,SHT_HEATNUM,SHT_BinNum,SHT_Mil,PRT_Data1,PRT_Data2,PRT_Data3,PRT_Data4,PRT_Data5,PRT_Data6,PRT_Data7,PRT_Data8,PRT_Data9,PRT_Data10,PRT_Data11,PRT_Data12,PRT_Data13,PRT_Data14,Sht_Total_Area,True_Part_Weight,MachineNumber,Sht_PrimeCode,UsedArea,TaskName,Material,Thickness{0}{1}",V.Ambient.NewLine,V.Local.sErrorFile,V.Local.sErrorFile)
+	f.Intrinsic.String.Build("{0}\{1}",v.Global.sErrorFile,v.Args.FilePath,v.Local.sHold)
+	f.Intrinsic.File.String2File(v.Local.sHold,V.Local.sErrorFile)
+F.Intrinsic.Control.EndIf
+
+'Delete Blank Lines first
+f.Data.DataView.Create("File","Blank",22,"JOBNUMBER = '' OR JOBNUMBER = 'JOBNUMBER'","")
+f.Intrinsic.Control.For(v.Local.iCount,v.DataView.File!Blank.RowCount--,0,-1)
+	f.Data.DataTable.DeleteRow("File",v.DataView.File!Blank(v.Local.iCount).DataTableIndex)
+f.Intrinsic.Control.Next(v.Local.iCount)
+f.Data.DataView.Close("File","Blank")
+
+'SFF 032718 - Cannot use expression column, so we need to loop through and populate each column programmatically, because suffixes do NOT always exist.
+'Add expression column for Job, Suffix, and Seq
+'f.Data.DataTable.AddExpressionColumn("File","Job","String","SUBSTRING([JOBNUMBER] + '                    ',1,6)")
+'f.Data.DataTable.AddExpressionColumn("File","Suffix","String","SUBSTRING([JOBNUMBER] + '                    ',8,3)")
+'f.Data.DataTable.AddExpressionColumn("File","Seq","String","SUBSTRING([JOBNUMBER] + '                    ',12,6)")
+
+f.Data.DataTable.AddColumn("File","Job","String")
+f.Data.DataTable.AddColumn("File","Suffix","String")
+f.Data.DataTable.AddColumn("File","Seq","String")
+
+f.Intrinsic.Control.For(v.Local.iTemp,v.Datatable.File.RowCount--,0,-1)
+'	V.DataTable.TempFile(V.Local.iCount).ValidWO!FieldValTrim
+	f.Intrinsic.String.Split(v.DataTable.File(v.Local.iTemp).JOBNUMBER!FieldValTrim,"_",v.Local.sJobTemp)
+	'check to make sure array is correct, sigmanest should always be passing back Job_Suffix_Seq_Instance
+	f.Intrinsic.Control.if(v.Local.sJobTemp.UBound,=,3)
+		F.Data.DataTable.SetValue("File",v.Local.iTemp,"Job",v.Local.sJobTemp(0))
+		F.Data.DataTable.SetValue("File",v.Local.iTemp,"Suffix",v.Local.sJobTemp(1))
+		F.Data.DataTable.SetValue("File",v.Local.iTemp,"Seq",v.Local.sJobTemp(2))
+	f.Intrinsic.Control.EndIf
+	
+f.Intrinsic.Control.Next(v.Local.iTemp)
+
+'Add in Bin column
+f.Data.DataTable.AddColumn("File","Bin","String")
+'Create Dictionary for default bin from inventory master
+f.Data.Dictionary.CreateFromSQL("DefaultBin","Con","SELECT RTRIM(PART) AS PART, RTRIM(BIN) AS BIN FROM V_INVENTORY_MSTR Order by Part")
+f.Data.Dictionary.SetDefaultReturn("DefaultBin","")
+f.Data.DataTable.FillFromDictionary("File","DefaultBin","MATERIAL","Bin")
+f.Data.Dictionary.Close("DefaultBin")
+
+'Create Expression column to link the qty to the part bin
+f.Data.DataTable.AddExpressionColumn("File","PartBin","String","TRIM([MATERIAL]) + '-' + TRIM([BIN])")
+
+'Create a Dictionary to make sure that the Park exists and has quantity
+'f.Data.Dictionary.CreateFromSQL("PartQty","Con","SELECT RTRIM(PART) AS PART, CAST(QTY_ONHAND AS DOUBLE) AS QTY_ONHAND FROM V_INVENTORY_MSTR WHERE QTY_ONHAND > 0 AND BIN = 'WINSTR'")
+f.Data.Dictionary.CreateFromSQL("PartQty","Con","SELECT RTRIM(PART) + '-' + RTRIM(BIN) AS PART, QUANTITY FROM V_ITEM_MASTER WHERE QUANTITY > 0 ")
+f.Data.Dictionary.SetDefaultReturn("PartQty",-1)
+f.Data.DataTable.AddColumn("File","On_Hand","Float")
+'f.Data.DataTable.FillFromDictionary("File","PartQty","PARTNUMBER","On_Hand")
+f.Data.DataTable.FillFromDictionary("File","PartQty","PartBin","On_Hand")
+f.Data.Dictionary.Close("PartQty")
+
+'f.Intrinsic.String.Build("{0}:::Made sure the Part exists and we have QTY for it. ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+
+'Create a Expression column that makes sure we have enough Qty on hand for the Qty required.
+'f.Data.DataTable.AddExpressionColumn("File","Make","String","IIF([ON_HAND] > CONVERT([QTYONPROGRAM],'System.Double'),'Y','N')")
+
+'Create Expression column for Part and Rev seperated
+'f.Data.DataTable.AddExpressionColumn("File","PartShort","String","SUBSTRING([PARTNUMBER] + '                    ',1,17)")
+'f.Data.DataTable.AddExpressionColumn("File","RevShort","String","SUBSTRING([PARTNUMBER] + '                    ',18,20)")
+f.Data.DataTable.AddExpressionColumn("File","PartShort","String","SUBSTRING([MATERIAL] + '                    ',1,17)")
+f.Data.DataTable.AddExpressionColumn("File","RevShort","String","SUBSTRING([MATERIAL] + '                    ',18,3)")
+
+'Create a dictionary for all job_Suffix_Seq for Material
+f.Data.DataTable.AddExpressionColumn("File","JSSOld","String","[JOB] + '_' + [SUFFIX] + '_' + [SEQ]")
+'f.Data.Dictionary.CreateFromSQL("JobSuffixSeq","Con","SELECT JOB + '-' + SUFFIX + ':' + SEQ AS JOBSUFFIXSEQ, 'Y' AS MFLAG FROM V_JOB_OPERATIONS WHERE LMO = 'M' AND SEQ < '995000' ")
+f.Data.Dictionary.CreateFromSQL("JobSuffixSeq","Con","SELECT rtrim(ltrim(JOB)) + '_' + rtrim(ltrim(SUFFIX)) + '_' + rtrim(ltrim(SEQ)) AS JOBSUFFIXSEQ, 'Y' AS ValidWO FROM V_JOB_OPERATIONS WHERE LMO = 'M' AND (SEQ < '995000' Or SEQ = '998000')")
+
+f.Data.Dictionary.SetDefaultReturn("JobSuffixSeq","N")
+'Fill from dictionary to a new column so we can use it to sort based off of it.
+f.Data.DataTable.AddColumn("File","ValidWO","String")
+f.Data.DataTable.FillFromDictionary("File","JobSuffixSeq","JSSOld","ValidWO")
+f.Data.Dictionary.Close("JobSuffixSeq")
+
+'creating Reject Datatable
+f.Data.DataView.Create("File","RejectFileView",22,"QTYONPROGRAM = '0'","")
+F.Data.DataView.ToDataTable("File","RejectFileView","RejectFile",True)
+F.Data.DataTable.SetValue("RejectFile",-1,"QTYONPROGRAM","1")
+'removing reject from file datable
+F.Intrinsic.Control.For(V.Local.iCount,V.DataView.File!RejectFileView.RowCount--,0,-1)
+	f.Data.DataTable.DeleteRow("File",V.DataView.File!RejectFileView(V.Local.iCount).DataTableIndex)
+F.Intrinsic.Control.Next(V.Local.iCount)
+F.Data.DataTable.AcceptChanges("File")
+F.Data.DataView.Close("File","RejectFileView")
+'f.Intrinsic.String.Build("{0}:::Made sure that the Job_Suffix_Seq exists. ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+
+'We need to convert to Quantity to SF to be issued.
+f.Data.DataTable.AddExpressionColumn("File","SF","Float","((CONVERT([NESTEDAREA_IN2_EA_PART], 'System.Double')/144)*CONVERT([QTYONPROGRAM],'System.Double'))")
+f.Data.DataTable.AddExpressionColumn("RejectFile","SF","Float","((CONVERT([NESTEDAREA_IN2_EA_PART], 'System.Double')/144)*CONVERT([QTYONPROGRAM],'System.Double'))")
+
+'Create a Expression column that makes sure we have enough Qty on hand for the Qty required.
+f.Data.DataTable.AddExpressionColumn("File","Make","String","IIF([ON_HAND] > (((CONVERT([NESTEDAREA_IN2_EA_PART], 'System.Double')/144)*CONVERT([QTYONPROGRAM],'System.Double'))),'Y','N')")
+f.Data.DataTable.AddExpressionColumn("RejectFile","Make","String","IIF([ON_HAND] > (((CONVERT([NESTEDAREA_IN2_EA_PART], 'System.Double')/144)*CONVERT([QTYONPROGRAM],'System.Double'))),'Y','N')")
+
+'f.Intrinsic.String.Build("{0}:::Converted SI to SF so we can issue in SF ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+
+'Create a view that doesn't have any blank Job Numbers
+f.Data.DataView.Create("File","FileView",22,"MAKE = 'Y' AND ValidWO = 'Y'","")
+f.Data.DataView.Create("RejectFile","RejectFileView",22,"MAKE = 'Y' OR ValidWO = 'Y'","")
+'Create todays date
+F.Intrinsic.String.Format(V.Ambient.Date,"mmddyy",V.Local.sHold)
+f.Intrinsic.Date.TimeSerial(1,0,0,v.Local.dStart)
+f.Intrinsic.String.Format(v.Local.dStart,"HHNN",v.Local.sTimeIn)
+'We need to loop through each line that is ready to make (meaning we have enough qty and the part exists)
+
+f.Intrinsic.Control.For(v.Local.iCount,0,v.DataView.File!FileView.RowCount--,1)
+	'Looping through the Ready to Make list we can add them to the IssueMaterial DT
+	'format the qty to ensure it has a decimal in the qty changed by SFF 04/24/2018
+	'callwrapper params require a decimal for whole numbers being passed.
+	'convert to string first.
+	f.Intrinsic.String.ConvertToString(v.DataView.File!FileView(v.Local.iCount).SF!FieldValFloat,v.Local.sQtyIssue)
+	f.Intrinsic.String.IsInString(v.Local.sQtyIssue,".",true,v.Local.bCheck)
+	f.Intrinsic.Control.If(v.Local.bCheck,<>,True)
+		f.Intrinsic.String.Build("{0}.0",v.Local.sQtyIssue.Trim,v.Local.sQtyIssue)
+	f.Intrinsic.Control.EndIf
+	
+	'checking to see if this is a rework
+'	F.Intrinsic.String.Right(V.DataView.File!FileView(V.Local.iCount).JOBNUMBER!FieldValTrim,3,V.Local.sJSSI)
+'	F.Intrinsic.String.Left(V.Local.sJSSI,1,V.Local.sJSSI)
+'	F.Intrinsic.Control.If(V.Local.sJSSI.UCase,=,"R")
+'		f.Data.DataTable.AddRow("IssueMaterial","Part",v.DataView.File!FileView(v.Local.iCount).PartShort!FieldValTrim,"Rev",v.DataView.File!FileView(v.Local.iCount).RevShort!FieldValTrim,"Qty",v.Local.sQtyIssue.trim,"Bin",v.DataView.File!FileView(v.Local.iCount).Bin!FieldValTrim,"Job",v.DataView.File!FileView(v.Local.iCount).Job!FieldValTrim,"Suffix",v.DataView.File!FileView(v.Local.iCount).Suffix!FieldValTrim,"Seq","998000")		
+'	F.Intrinsic.Control.Else
+		f.Data.DataTable.AddRow("IssueMaterial","Part",v.DataView.File!FileView(v.Local.iCount).PartShort!FieldValTrim,"Rev",v.DataView.File!FileView(v.Local.iCount).RevShort!FieldValTrim,"Qty",v.Local.sQtyIssue.trim,"Bin",v.DataView.File!FileView(v.Local.iCount).Bin!FieldValTrim,"Job",v.DataView.File!FileView(v.Local.iCount).Job!FieldValTrim,"Suffix",v.DataView.File!FileView(v.Local.iCount).Suffix!FieldValTrim,"Seq",v.DataView.File!FileView(v.Local.iCount).Seq!FieldValTrim)
+'	F.Intrinsic.Control.EndIf
+	
+	'We need to calculate our stop time with our start time as 1:00AM
+	'Get Qty * hours per piece
+	f.Intrinsic.Math.Mult(v.DataView.File!FileView(v.Local.iCount).QTYONPROGRAM!FieldValFloat,v.DataView.File!FileView(v.Local.iCount).ONEPARTCUTTIME_HRS!FieldValFloat,v.Local.fHours)
+	f.Intrinsic.Control.If(v.Local.fHours,<,0.01)
+		v.Local.fActHrs.Set(.01)
+	f.Intrinsic.Control.Else
+		f.Intrinsic.Math.Round(v.Local.fHours,2,v.Local.fActHrs)
+	f.Intrinsic.Control.EndIf
+	'Put time into Minues from hours
+	f.Intrinsic.Math.Mult(v.Local.fHours,60,v.Local.fHours)
+	'add our minues to our Start time to get our time out
+	f.Intrinsic.Date.DateAdd("N",v.Local.fHours,v.Local.dStart,v.Local.dHours)
+	'format the stop time
+	f.Intrinsic.String.Format(v.Local.dHours,"HHNN",v.Local.sTimeOut)
+
+	'format good pieces
+'	f.Intrinsic.Math.Mult(v.DataView.File!FileView(v.Local.iCount).QTYONPROGRAM!FieldValFloat,10000,v.Local.sQty)
+	f.Intrinsic.String.Format(v.DataView.File!FileView(v.Local.iCount).QTYONPROGRAM!FieldValFloat,"#0.00##",v.Local.sQty)
+	f.Intrinsic.String.Build("SELECT SEQ FROM V_JOB_OPERATIONS WHERE (PART IN (SELECT MACHINE FROM V_WORKCENTERS WHERE NESTING_INTRFC = 'Y') OR PART IN (SELECT WORK_GROUP FROM V_WORKGROUP_HEAD WHERE NESTING = '1')) AND JOB = '{0}' AND SUFFIX = '{1}' ",v.DataView.File!FileView(v.Local.iCount).Job!FieldVal,v.DataView.File!FileView(v.Local.iCount).Suffix!FieldVal,v.Local.sSQL)
+	f.ODBC.Connection!Con.OpenLocalRecordsetRO("rstSeq",v.Local.sSQL)
+	f.Intrinsic.Control.If(v.ODBC.Con!rstSeq.EOF,=,False)
+		v.Local.sSeq.Set(v.ODBC.Con!rstSeq.FieldValTrim!SEQ)
+	f.Intrinsic.Control.Else
+		v.Local.sSeq.Set(v.DataView.File!FileView(v.Local.iCount).Seq!FieldVal)
+	f.Intrinsic.Control.EndIf
+	f.ODBC.Con!rstSeq.Close
+'	F.Intrinsic.Control.If(V.Local.sJSSI.UCase,=,"R")
+	F.Intrinsic.Control.If(v.DataView.File!FileView(v.Local.iCount).Seq!FieldVal,=,"998000")
+		f.Data.DataTable.AddRow("IssueLabor","Date",v.Local.sHold,"Employee","99999","Job",v.DataView.File!FileView(v.Local.iCount).Job!FieldVal,"Suffix",v.DataView.File!FileView(v.Local.iCount).Suffix!FieldVal,"Seq","998500","WorkCenter",v.DataView.File!FileView(v.Local.iCount).Machine!FieldVal,"Hours",v.Local.fActHrs,"Closed","Y","Indirect","D","StartTime","","StopTime","","RateType","R","GoodPcs",v.Local.sQty,"ScrapPcs",0,"Reason","")	
+	F.Intrinsic.Control.Else
+		'Date, Employee, Job, Suffix, Seq, Workcenter, Hours, Closed, Indirect, Start-Time, Stop Time, Rate type, Good Pcs, Scrap Pcs, Reason
+		f.Data.DataTable.AddRow("IssueLabor","Date",v.Local.sHold,"Employee","99999","Job",v.DataView.File!FileView(v.Local.iCount).Job!FieldVal,"Suffix",v.DataView.File!FileView(v.Local.iCount).Suffix!FieldVal,"Seq",v.Local.sSeq,"WorkCenter",v.DataView.File!FileView(v.Local.iCount).Machine!FieldVal,"Hours",v.Local.fActHrs,"Closed","Y","Indirect","D","StartTime","","StopTime","","RateType","R","GoodPcs",v.Local.sQty,"ScrapPcs",0,"Reason","")
+	F.Intrinsic.Control.EndIf
+f.Intrinsic.Control.Next(v.Local.iCount)
+
+'We need to loop through each line that is ready to make (meaning we have enough qty and the part exists)
+f.Intrinsic.Control.For(v.Local.iCount,0,v.DataView.RejectFile!RejectFileView.RowCount--,1)
+	'Looping through the Ready to Make list we can add them to the IssueMaterial DT
+	'format the qty to ensure it has a decimal in the qty changed by SFF 04/24/2018
+	'callwrapper params require a decimal for whole numbers being passed.
+	'convert to string first.
+	f.Intrinsic.String.ConvertToString(v.DataView.RejectFile!RejectFileView(v.Local.iCount).SF!FieldValFloat,v.Local.sQtyIssue)
+	f.Intrinsic.String.IsInString(v.Local.sQtyIssue,".",true,v.Local.bCheck)
+	f.Intrinsic.Control.If(v.Local.bCheck,<>,True)
+		f.Intrinsic.String.Build("{0}.0",v.Local.sQtyIssue.Trim,v.Local.sQtyIssue)
+	f.Intrinsic.Control.EndIf
+	f.Data.DataTable.AddRow("RejectIssueMaterial","Part",v.DataView.RejectFile!RejectFileView(v.Local.iCount).PartShort!FieldValTrim,"Rev",v.DataView.RejectFile!RejectFileView(v.Local.iCount).RevShort!FieldValTrim,"Qty",v.Local.sQtyIssue.Trim,"Bin",v.DataView.RejectFile!RejectFileView(v.Local.iCount).Bin!FieldValTrim,"Job",v.DataView.RejectFile!RejectFileView(v.Local.iCount).Job!FieldValTrim,"Suffix",v.DataView.RejectFile!RejectFileView(v.Local.iCount).Suffix!FieldValTrim,"Seq","998000")
+	'We need to calculate our stop time with our start time as 1:00AM
+	'Get Qty * hours per piece
+	f.Intrinsic.Math.Mult(v.DataView.RejectFile!RejectFileView(v.Local.iCount).QTYONPROGRAM!FieldValFloat,v.DataView.RejectFile!RejectFileView(v.Local.iCount).ONEPARTCUTTIME_HRS!FieldValFloat,v.Local.fHours)
+	f.Intrinsic.Control.If(v.Local.fHours,<,0.01)
+		v.Local.fActHrs.Set(0.01)
+	f.Intrinsic.Control.Else
+		f.Intrinsic.Math.Round(v.Local.fHours,2,v.Local.fActHrs)
+	f.Intrinsic.Control.EndIf
+	'Put time into Minues from hours
+	f.Intrinsic.Math.Mult(v.Local.fHours,60,v.Local.fHours)
+	'add our minues to our Start time to get our time out
+	f.Intrinsic.Date.DateAdd("N",v.Local.fHours,v.Local.dStart,v.Local.dHours)
+	'format the stop time
+	f.Intrinsic.String.Format(v.Local.dHours,"HHNN",v.Local.sTimeOut)
+
+	'format good pieces
+	f.Intrinsic.String.Format(v.DataView.RejectFile!RejectFileView(v.Local.iCount).QTYONPROGRAM!FieldValFloat,"#0.00##",v.Local.sQty)
+	
+	'Date, Employee, Job, Suffix, Seq, Workcenter, Hours, Closed, Indirect, Start-Time, Stop Time, Rate type, Good Pcs, Scrap Pcs, Reason
+	f.Data.DataTable.AddRow("RejectIssueLabor","Date",v.Local.sHold,"Employee","99999","Job",v.DataView.RejectFile!RejectFileView(v.Local.iCount).Job!FieldVal,"Suffix",v.DataView.RejectFile!RejectFileView(v.Local.iCount).Suffix!FieldVal,"Seq","998500","WorkCenter",v.DataView.RejectFile!RejectFileView(v.Local.iCount).Machine!FieldVal,"Hours",v.Local.fActHrs,"Closed","N","Indirect","D","StartTime","","StopTime","","RateType","R","GoodPcs",v.Local.sQty,"ScrapPcs",0,"Reason","")
+F.Intrinsic.Control.Next(V.Local.iCount)
+'f.Intrinsic.String.Build("{0}:::Issue Material DT has {1} rows to issue. ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.DataTable.IssueMaterial.RowCount,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+'setting Qtyonprogram back to 0 in the RejectFile datatable so it shows in the processed file that its a reject piece
+F.Intrinsic.Control.If(V.DataTable.RejectFile.RowCount--,<>,-1)
+	F.Data.DataTable.SetValue("RejectFile",-1,"QTYONPROGRAM","0")
+F.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.DataView.File!FileView.RowCount,>,0)
+	'Save the FileView where Make = Y and ValidWO = Y to the Processed Folder
+	f.Data.DataView.ToString("File","FileView","JOBNUMBER*!*PROGRAMNUMBER*!*PARTNUMBER*!*QTYORDERED*!*QTYONPROGRAM*!*OnePartCutTime_Hrs*!*NESTEDAREA_in2_Ea_Part*!*NESTEDWEIGHT_Total_Lbs*!*SHEETNAME*!*PROGRAM_SCRAP_PERTAGE*!*MACHINE*!*SHT_LOCATION*!*SHT_HEATNUM*!*SHT_BinNum*!*SHT_Mil*!*PRT_Data1*!*PRT_Data2*!*PRT_Data3*!*PRT_Data4*!*PRT_Data5*!*PRT_Data6*!*PRT_Data7*!*PRT_Data8*!*PRT_Data9*!*PRT_Data10*!*PRT_Data11*!*PRT_Data12*!*PRT_Data13*!*PRT_Data14*!*Sht_Total_Area*!*True_Part_Weight*!*MachineNumber*!*Sht_PrimeCode*!*UsedArea*!*TaskName*!*Material*!*Thickness",",",v.Ambient.NewLine,v.Local.sRet)
+	'Save the Processed lines to Process folder using the File name
+'	f.Intrinsic.String.Build("{0}\{1}",v.Global.sProcessedFile,v.Args.FilePath,v.Local.sHold)
+'	f.Intrinsic.File.String2File(v.Local.sHold,v.Local.sRet)
+f.Intrinsic.Control.EndIf
+'adding reject to process file
+F.Intrinsic.Control.If(V.DataView.RejectFile!RejectFileView.RowCount,>,0)
+	'Save the FileView where Make = Y and ValidWO = Y to the Processed Folder
+	f.Data.DataView.ToString("RejectFile","RejectFileView","JOBNUMBER*!*PROGRAMNUMBER*!*PARTNUMBER*!*QTYORDERED*!*QTYONPROGRAM*!*OnePartCutTime_Hrs*!*NESTEDAREA_in2_Ea_Part*!*NESTEDWEIGHT_Total_Lbs*!*SHEETNAME*!*PROGRAM_SCRAP_PERTAGE*!*MACHINE*!*SHT_LOCATION*!*SHT_HEATNUM*!*SHT_BinNum*!*SHT_Mil*!*PRT_Data1*!*PRT_Data2*!*PRT_Data3*!*PRT_Data4*!*PRT_Data5*!*PRT_Data6*!*PRT_Data7*!*PRT_Data8*!*PRT_Data9*!*PRT_Data10*!*PRT_Data11*!*PRT_Data12*!*PRT_Data13*!*PRT_Data14*!*Sht_Total_Area*!*True_Part_Weight*!*MachineNumber*!*Sht_PrimeCode*!*UsedArea*!*TaskName*!*Material*!*Thickness",",",v.Ambient.NewLine,v.Local.sRejectRet)
+	F.Intrinsic.String.Build("{0}{1}{2}",V.Local.sRet,V.Ambient.NewLine,V.Local.sRejectRet,V.Local.sRet)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Local.sRet.Length,>,0)
+	f.Intrinsic.String.Build("{0}\{1}",v.Global.sProcessedFile,v.Args.FilePath,v.Local.sHold)
+	f.Intrinsic.File.String2File(v.Local.sHold,v.Local.sRet)
+F.Intrinsic.Control.EndIf
+'f.Intrinsic.String.Build("{0}:::We have {1} rows to move to Processed. ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.DataView.File!FileView.RowCount,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+
+'Change the Filter to Make = N OR ValidWO = N. If we have any then Save it to the Error folder
+f.Data.DataView.SetFilter("File","FileView","MAKE = 'N' OR ValidWO = 'N'")
+f.Data.DataView.SetFilter("RejectFile","RejectFileView","MAKE = 'N' OR ValidWO = 'N'")
+f.Intrinsic.Control.If(v.DataView.File!FileView.RowCount,>,0)
+	'We have records that we couldn't make so we need to save them to the Error folder
+'	f.Data.DataView.ToString("File","FileView","JOBNUMBER*!*PROGRAMNUMBER*!*PARTNUMBER*!*QTYORDERED*!*QTYONPROGRAM*!*OnePartCutTime_Hrs*!*NESTEDAREA_in2_Ea_Part*!*NESTEDWEIGHT_Total_Lbs*!*SHEETNAME*!*PROGRAM_SCRAP_PERTAGE*!*MACHINE*!*SHT_LOCATION*!*SHT_HEATNUM*!*SHT_BinNum*!*SHT_Mil*!*PRT_Data1*!*PRT_Data2*!*PRT_Data3*!*PRT_Data4*!*PRT_Data5*!*PRT_Data6*!*PRT_Data7*!*PRT_Data8*!*PRT_Data9*!*PRT_Data10*!*PRT_Data11*!*PRT_Data12*!*PRT_Data13*!*PRT_Data14*!*Sht_Total_Area*!*True_Part_Weight*!*MachineNumber*!*Sht_PrimeCode*!*UsedArea*!*TaskName*!*Material*!*Thickness",",",v.Ambient.NewLine,v.Local.sRet)
+	'Save the Processed lines to Process folder using the File name
+'	f.Intrinsic.String.Build("{0}\{1}",v.Global.sErrorFile,v.Args.FilePath,v.Local.sHold)
+'	f.Intrinsic.File.String2File(v.Local.sHold,v.Local.sRet)
+	F.Data.DataView.ToDataTable("File","FileView","TempFile",True)
+	F.Data.DataTable.AddColumn("TempFile","Errors","String")
+	F.Data.DataTable.AddColumn("TempFile","Rec_No","Long")
+	
+	F.ODBC.Connection!Con.GetID("GCG_4447_SN_GSS_ERR","Rec_No",False,V.Local.iRet)
+	F.Intrinsic.Control.For(V.Local.iCount,0,V.DataTable.TempFile.RowCount--,1)
+		F.Intrinsic.Math.Add(V.Local.iRet,1,V.Local.iRet)
+		F.Data.DataTable.SetValue("TempFile",V.Local.iCount,"Rec_No",V.Local.iRet)
+		V.Local.sErrorFile.Set("")
+		F.Intrinsic.Control.If(V.DataTable.TempFile(V.Local.iCount).Make!FieldValTrim,=,"N")
+			V.Local.sErrorFile.Set("Not enough Qty OnHand")
+		F.Intrinsic.Control.ElseIf(V.DataTable.TempFile(V.Local.iCount).ValidWO!FieldValTrim,=,"N")
+			F.Intrinsic.Control.If(V.Local.sErrorFile.Length,=,0)
+				V.Local.sErrorFile.Set("Not a Valid Job Suffix Seq")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Build("{0}, Not a Valid Job Suffix Seq",V.Local.sErrorFile,V.Local.sErrorFile)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+		F.Data.DataTable.SetValue("TempFile",V.Local.iCount,"Errors",V.Local.sErrorFile)
+	F.Intrinsic.Control.Next(V.Local.iCount)
+	
+	F.Data.DataTable.SaveToDB("TempFile","Con","GCG_4447_SN_GSS_ERR","Rec_No",7,V.Local.sFieldMap)
+	F.Data.DataTable.Close("TempFile")
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.DataView.RejectFile!RejectFileView.RowCount,>,0)
+	'We have records that we couldn't make so we need to save them to the Error table
+	F.Data.DataView.ToDataTable("RejectFile","RejectFileView","TempFile",True)
+	F.Data.DataTable.AddColumn("TempFile","Errors","String")
+	F.Data.DataTable.AddColumn("TempFile","Rec_No","Long")
+	F.Data.DataTable.SetValue("TempFile",-1,"QTYONPROGRAM","0")
+	F.ODBC.Connection!Con.GetID("GCG_4447_SN_GSS_ERR","Rec_No",False,V.Local.iRet)
+	F.Intrinsic.Control.For(V.Local.iCount,0,V.DataTable.TempFile.RowCount--,1)
+		F.Intrinsic.Math.Add(V.Local.iRet,1,V.Local.iRet)
+		F.Data.DataTable.SetValue("TempFile",V.Local.iCount,"Rec_No",V.Local.iRet)
+		V.Local.sErrorFile.Set("")
+		F.Intrinsic.Control.If(V.DataTable.TempFile(V.Local.iCount).Make!FieldValTrim,=,"N")
+			V.Local.sErrorFile.Set("Not enough Qty OnHand")
+		F.Intrinsic.Control.ElseIf(V.DataTable.TempFile(V.Local.iCount).ValidWO!FieldValTrim,=,"N")
+			F.Intrinsic.Control.If(V.Local.sErrorFile.Length,=,0)
+				V.Local.sErrorFile.Set("Not a Valid Job Suffix Seq")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Build("{0}, Not a Valid Job Suffix Seq",V.Local.sErrorFile,V.Local.sErrorFile)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+		F.Data.DataTable.SetValue("TempFile",V.Local.iCount,"Errors",V.Local.sErrorFile)
+	F.Intrinsic.Control.Next(V.Local.iCount)
+	
+	F.Data.DataTable.SaveToDB("TempFile","Con","GCG_4447_SN_GSS_ERR","Rec_No",7,V.Local.sFieldMap)
+	F.Data.DataTable.Close("TempFile")
+f.Intrinsic.Control.EndIf
+'f.Intrinsic.String.Build("{0}:::We have {1} rows to move to Error. ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.DataView.File!FileView.RowCount,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+
+'Delete the Source File
+f.Intrinsic.String.Build("{0}{1}",v.Global.sCompleteFile,v.Args.FilePath,v.Local.sRet)
+f.Intrinsic.File.DeleteFile(v.Local.sRet)
+
+'f.Intrinsic.String.Build("{0}:::Deleted original file {1} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Args.FilePath,v.Global.sLogText)
+'f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+
+
+'Processed lines saved to Processed folder.
+'Error lines saved to Error folder.
+'Original file has been deleted.
+
+f.Intrinsic.Control.If(v.DataTable.IssueMaterial.RowCount,>,0)
+	'Create a DataView just because we have to
+	f.Data.DataView.Create("IssueMaterial","IssueView",22)
+	'IssueMaterial DT now has all of our Data to issue.
+	f.Intrinsic.String.Build("{0}\L{1}{2}MOPEN.txt",v.Caller.FilesDir,v.Caller.CompanyCode,v.Caller.Terminal,v.Local.sMOPEN)
+'	f.Data.DataTable.SaveToCSV("IssueMaterial",v.Local.sMOPEN,False)
+	f.Data.DataView.ToString("IssueMaterial","IssueView",",",v.Ambient.NewLine,v.Local.sRet)
+	f.Intrinsic.File.String2File(v.Local.sMOPEN,v.Local.sRet)
+	'Create Backup MOPEN file
+	f.Intrinsic.String.Build("{0}\L{1}{2}MOPEN.txt.{3}{4}",v.Caller.FilesDir,v.Caller.CompanyCode,v.Caller.Terminal,v.Ambient.Date.FormatMMDDYYYY,v.Ambient.Now.FormatHHNNSS,v.Local.sBackupMOPEN)
+'	f.Data.DataTable.SaveToCSV("IssueMaterial",v.Local.sBackupMOPEN,False)
+	f.Intrinsic.File.String2File(v.Local.sBackupMOPEN,v.Local.sRet)
+	
+'	f.Intrinsic.String.Build("{0}:::Created MOPEN file and backup file to {1} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Local.sBackupMOPEN,v.Global.sLogText)
+'	f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+	
+	'Now we can Issue the lines.
+	f.Intrinsic.String.Build("L{0}{1}MOPEN.txt",v.Caller.CompanyCode,v.Caller.Terminal,v.Local.sMOPEN)
+	
+	f.Global.General.CallWrapperSync(450100,v.Local.sMOPEN)
+	
+	'now that issued the material we need to go back and close all of the lines.
+	f.Intrinsic.Control.For(v.Local.iCountm,0,v.DataTable.IssueMaterial.RowCount--,1)
+		'we need to close each job suffix seq in this table.
+		f.Intrinsic.String.Build("UPDATE JOB_OPERATIONS SET FLAG_CLOSED = 'Y' WHERE JOB = '{0}' AND SUFFIX = '{1}' AND SEQ = '{2}' ",V.DataTable.IssueMaterial(V.Local.iCountm).Job!FieldValTrim,V.DataTable.IssueMaterial(V.Local.iCountm).Suffix!FieldValTrim,V.DataTable.IssueMaterial(V.Local.iCountm).Seq!FieldValTrim,v.Local.sSQL)
+		f.ODBC.Connection!Con.Execute(v.Local.sSQL)
+	f.Intrinsic.Control.Next(v.Local.iCountm)
+	
+'	f.Intrinsic.String.Build("{0}:::Finished Issuing Material and Closing Material Sequences ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Global.sLogText)
+'	f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+	
+f.Intrinsic.Control.EndIf
+
+f.Intrinsic.Control.If(v.DataTable.RejectIssueMaterial.RowCount,>,0)
+	'Create a DataView just because we have to
+	f.Data.DataView.Create("RejectIssueMaterial","RejectIssueView",22)
+	'IssueMaterial DT now has all of our Data to issue.
+	f.Intrinsic.String.Build("{0}\L{1}{2}MOPEN.txt",v.Caller.FilesDir,v.Caller.CompanyCode,v.Caller.Terminal,v.Local.sMOPEN)
+'	f.Data.DataTable.SaveToCSV("IssueMaterial",v.Local.sMOPEN,False)
+	f.Data.DataView.ToString("RejectIssueMaterial","RejectIssueView",",",v.Ambient.NewLine,v.Local.sRet)
+	f.Intrinsic.File.String2File(v.Local.sMOPEN,v.Local.sRet)
+	'Create Backup MOPEN file
+	f.Intrinsic.String.Build("{0}\L{1}{2}MOPEN.txt.{3}{4}",v.Caller.FilesDir,v.Caller.CompanyCode,v.Caller.Terminal,v.Ambient.Date.FormatMMDDYYYY,v.Ambient.Now.FormatHHNNSS,v.Local.sBackupMOPEN)
+'	f.Data.DataTable.SaveToCSV("IssueMaterial",v.Local.sBackupMOPEN,False)
+	f.Intrinsic.File.String2File(v.Local.sBackupMOPEN,v.Local.sRet)
+	
+'	f.Intrinsic.String.Build("{0}:::Created MOPEN file and backup file to {1} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Local.sBackupMOPEN,v.Global.sLogText)
+'	f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+	
+	'Now we can Issue the lines.
+	f.Intrinsic.String.Build("L{0}{1}MOPEN.txt",v.Caller.CompanyCode,v.Caller.Terminal,v.Local.sMOPEN)
+
+	f.Global.General.CallWrapperSync(450100,v.Local.sMOPEN)
+F.Intrinsic.Control.EndIf
+
+'Process the Labor Lines
+f.Intrinsic.Control.If(v.DataTable.IssueLabor.RowCount,>,0)
+
+
+	'Create a DataView just because we have to
+	f.Data.DataView.Create("IssueLabor","IssueLaborView",22)
+	'IssueMaterial DT now has all of our Data to issue.
+	f.Intrinsic.String.Build("{0}\{1}{2}MOPEN.txt",v.Caller.FilesDir,v.Caller.CompanyCode,v.Caller.Terminal,v.Local.sMOPEN)
+	f.Data.DataView.ToString("IssueLabor","IssueLaborView",v.Ambient.Tab,v.Ambient.NewLine,v.Local.sRet)
+	f.Intrinsic.File.String2File(v.Local.sMOPEN,v.Local.sRet)
+	'Create Backup MOPEN file
+	f.Intrinsic.String.Build("{0}\{1}{2}MOPEN.txt.{3}{4}",v.Caller.FilesDir,v.Caller.CompanyCode,v.Caller.Terminal,v.Ambient.Date.FormatMMDDYYYY,v.Ambient.Now.FormatHHNNSS,v.Local.sBackupMOPEN)
+	f.Intrinsic.File.String2File(v.Local.sBackupMOPEN,v.Local.sRet)
+	
+'	f.Intrinsic.String.Build("{0}:::Created MOPEN file and backup file to {1} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Local.sBackupMOPEN,v.Global.sLogText)
+'	f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+	
+	'Now we can Issue the lines.
+	f.Intrinsic.String.Build("{0}{1}MOPEN.txt",v.Caller.CompanyCode,v.Caller.Terminal,v.Local.sMOPEN)
+
+	F.Intrinsic.Task.LaunchGSSSync("JB0455","-c",V.Local.sMOPEN)
+f.Intrinsic.Control.EndIf
+
+'Process the Labor Lines
+f.Intrinsic.Control.If(v.DataTable.RejectIssueLabor.RowCount,>,0)
+	'Create a DataView just because we have to
+	f.Data.DataView.Create("RejectIssueLabor","RejectIssueLaborView",22)
+	'IssueMaterial DT now has all of our Data to issue.
+	f.Intrinsic.String.Build("{0}\{1}{2}MOPEN.txt",v.Caller.FilesDir,v.Caller.CompanyCode,v.Caller.Terminal,v.Local.sMOPEN)
+	f.Data.DataView.ToString("RejectIssueLabor","RejectIssueLaborView",v.Ambient.Tab,v.Ambient.NewLine,v.Local.sRet)
+	f.Intrinsic.File.String2File(v.Local.sMOPEN,v.Local.sRet)
+	'Create Backup MOPEN file
+	f.Intrinsic.String.Build("{0}\{1}{2}MOPEN.txt.{3}{4}",v.Caller.FilesDir,v.Caller.CompanyCode,v.Caller.Terminal,v.Ambient.Date.FormatMMDDYYYY,v.Ambient.Now.FormatHHNNSS,v.Local.sBackupMOPEN)
+	f.Intrinsic.File.String2File(v.Local.sBackupMOPEN,v.Local.sRet)
+	
+'	f.Intrinsic.String.Build("{0}:::Created MOPEN file and backup file to {1} ",v.Ambient.Now.FormatHH:NN:SSAMPM,v.Local.sBackupMOPEN,v.Global.sLogText)
+'	f.Intrinsic.File.Append2FileNewLine(v.Global.sLogFile,v.Global.sLogText)
+	
+	'Now we can Issue the lines.
+	f.Intrinsic.String.Build("{0}{1}MOPEN.txt",v.Caller.CompanyCode,v.Caller.Terminal,v.Local.sMOPEN)
+	
+	F.Intrinsic.Task.LaunchGSSSync("JB0455","-c",V.Local.sMOPEN)
+f.Intrinsic.Control.EndIf
+
+'Everything is done now!
+'Close all DT's so they can be recreated for he next one.
+f.Data.DataTable.Close("IssueMaterial")
+f.Data.DataTable.Close("RejectIssueMaterial")
+f.Data.DataTable.Close("IssueLabor")
+f.Data.DataTable.Close("RejectIssueLabor")
+f.Data.DataTable.Close("File")
+f.Data.DataTable.Close("RejectFile")
+
+f.Intrinsic.Control.Catch
+	f.Intrinsic.Control.CallSub(TryCatch,"Sub",V.Ambient.CurrentSubroutine,"Error",V.Ambient.ErrorNumber,"Desc",V.Ambient.ErrorDescription)
+f.Intrinsic.Control.EndTry
+Program.Sub.ReadFile.End
