@@ -1,0 +1,1346 @@
+Program.Sub.ScreenSU.Start
+Gui.FormRework..Create
+Gui.FormRework..Caption("Work Order Rework")
+Gui.FormRework..Size(5340,11700)
+Gui.FormRework..MinX(0)
+Gui.FormRework..MinY(0)
+Gui.FormRework..Position(0,0)
+Gui.FormRework..BackColor(-2147483633)
+Gui.FormRework..MousePointer(0)
+Gui.FormRework..Event(UnLoad,FormRework_UnLoad)
+Gui.FormRework.txtJob.Create(TextBox,"",True,1425,300,0,120,345,True,0,"Arial",8,-2147483643,1)
+Gui.FormRework.txtJob.Event(GotFocus,txtJob_GotFocus)
+Gui.FormRework.txtSuffix.Create(TextBox,"",True,570,300,0,1605,345,True,0,"Arial",8,-2147483643,1)
+Gui.FormRework.txtSuffix.Event(GotFocus,txtSuffix_GotFocus)
+Gui.FormRework.lblJob.Create(Label,"Job",True,1335,255,0,150,105,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.lblSuffix.Create(Label,"Suffix",True,570,255,0,1605,105,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.cmdJobSuffixSeq.Create(Button)
+Gui.FormRework.cmdJobSuffixSeq.Size(390,390)
+Gui.FormRework.cmdJobSuffixSeq.Position(2265,300)
+Gui.FormRework.cmdJobSuffixSeq.Caption("^")
+Gui.FormRework.cmdJobSuffixSeq.Event(Click,cmdJobSuffixSeq_Click)
+Gui.FormRework.cmdAdd.Create(Button)
+Gui.FormRework.cmdAdd.Size(855,375)
+Gui.FormRework.cmdAdd.Position(2775,300)
+Gui.FormRework.cmdAdd.Caption("Add")
+Gui.FormRework.cmdAdd.Event(Click,cmdAdd_Click)
+Gui.FormRework.GsGridControl1.Create(GsGridControl)
+Gui.FormRework.GsGridControl1.Size(4965,5835)
+Gui.FormRework.GsGridControl1.Position(120,825)
+Gui.FormRework.GsGridControl1.Event(RowCellClick,GsGridControl1_RowCellClick)
+Gui.FormRework.GsGridControl1.Event(MouseCellEnter,GsGridControl1_MouseCellEnter)
+Gui.FormRework.cmdSubmit.Create(Button)
+Gui.FormRework.cmdSubmit.Size(855,375)
+Gui.FormRework.cmdSubmit.Position(120,7095)
+Gui.FormRework.cmdSubmit.Caption("Submit")
+Gui.FormRework.cmdSubmit.Event(Click,cmdSubmit_Click)
+Gui.FormRework.txtDefualtEmail.Create(TextBox,"",True,2670,300,0,2415,6975,True,0,"Arial",8,-2147483643,1)
+Gui.FormRework.txtDefualtEmail.Event(GotFocus,txtDefualtEmail_GotFocus)
+Gui.FormRework.lblDefaultEmail.Create(Label,"Default Email(s):",True,1275,255,0,1080,7065,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.txtDefualtSenderEmail.Create(TextBox,"",True,2670,300,0,2415,7350,True,0,"Arial",8,-2147483643,1)
+Gui.FormRework.txtDefualtSenderEmail.Event(GotFocus,txtDefualtSenderEmail_GotFocus)
+Gui.FormRework.lblDefaultSenderEmail.Create(Label,"Sender Email:",True,1080,255,0,1275,7440,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.lblDefualtSubject.Create(Label,"Default Subject",True,1935,255,0,105,7755,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.txtDefualtSubject.Create(TextBox,"",True,4965,300,0,120,7995,True,0,"Arial",8,-2147483643,1)
+Gui.FormRework.txtDefualtSubject.MaxLength(50)
+Gui.FormRework.txtDefualtSubject.Event(GotFocus,txtDefualtSubject_GotFocus)
+Gui.FormRework.lblDefualtBody.Create(Label,"Default Body",True,1935,255,0,105,8415,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.txtDefualtBody.Create(TextBoxR)
+Gui.FormRework.txtDefualtBody.Size(4965,1650)
+Gui.FormRework.txtDefualtBody.Position(105,8595)
+Gui.FormRework.txtDefualtBody.MaxLength(255)
+Gui.FormRework.lblWildCard.Create(Label,"WildCards: ",True,930,270,0,1065,10335,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.lblWildCards.Create(Label,"{EJOB-SUFF} Exported Job Suffix, {NJOB-SUFF} Job Suffix not exported",True,4005,645,0,1065,10680,True,0,"Arial",8,-2147483633,0)
+Gui.FormRework.cmdSave.Create(Button)
+Gui.FormRework.cmdSave.Size(855,375)
+Gui.FormRework.cmdSave.Position(120,10770)
+Gui.FormRework.cmdSave.Caption("Save")
+Gui.FormRework.cmdSave.Event(Click,cmdSave_Click)
+Gui.FormRework.lblDefualtEmailNote.Create(Label,"Defualt Email can be ; delimited",True,2400,255,0,2415,6750,True,0,"Arial",8,-2147483633,0)
+Gui.FormEmail..Create
+Gui.FormEmail..Caption("Email Rework CSV")
+Gui.FormEmail..Size(7365,6780)
+Gui.FormEmail..MinX(0)
+Gui.FormEmail..MinY(0)
+Gui.FormEmail..Position(0,0)
+Gui.FormEmail..BackColor(-2147483633)
+Gui.FormEmail..MousePointer(0)
+Gui.FormEmail..Event(UnLoad,FormEmail_UnLoad)
+Gui.FormEmail.lblRec.Create(Label,"Recipients",True,1935,255,0,3330,255,True,0,"Arial",8,-2147483633,0)
+Gui.FormEmail.txtEnterEmail.Create(TextBox,"",True,2955,300,0,195,495,True,0,"Arial",8,-2147483643,1)
+Gui.FormEmail.txtEnterEmail.Event(GotFocus,txtEnterEmail_GotFocus)
+Gui.FormEmail.lblEnterEmail.Create(Label,"Enter an Email Address",True,3090,255,0,195,255,True,0,"Arial",8,-2147483633,0)
+Gui.FormEmail.cmdAddEmail.Create(Button)
+Gui.FormEmail.cmdAddEmail.Size(855,375)
+Gui.FormEmail.cmdAddEmail.Position(195,945)
+Gui.FormEmail.cmdAddEmail.Caption("Add")
+Gui.FormEmail.cmdAddEmail.Event(Click,cmdAddEmail_Click)
+Gui.FormEmail.cmdRemoveEmail.Create(Button)
+Gui.FormEmail.cmdRemoveEmail.Size(855,375)
+Gui.FormEmail.cmdRemoveEmail.Position(1185,945)
+Gui.FormEmail.cmdRemoveEmail.Caption("Remove")
+Gui.FormEmail.cmdRemoveEmail.Event(Click,cmdRemoveEmail_Click)
+Gui.FormEmail.txtSubject.Create(TextBox,"",True,6855,300,0,195,1800,True,0,"Arial",8,-2147483643,1)
+Gui.FormEmail.txtSubject.Event(GotFocus,txtSubject_GotFocus)
+Gui.FormEmail.lblSubject.Create(Label,"Subject",True,1935,255,0,195,1575,True,0,"Arial",8,-2147483633,0)
+Gui.FormEmail.txtBody.Create(TextBoxR)
+Gui.FormEmail.txtBody.Size(6855,3165)
+Gui.FormEmail.txtBody.Position(195,2475)
+Gui.FormEmail.cmdSendEmail.Create(Button)
+Gui.FormEmail.cmdSendEmail.Size(855,375)
+Gui.FormEmail.cmdSendEmail.Position(195,5835)
+Gui.FormEmail.cmdSendEmail.Caption("Send")
+Gui.FormEmail.cmdSendEmail.Event(Click,cmdSendEmail_Click)
+Gui.FormEmail.lblBody.Create(Label,"Body",True,1935,255,0,195,2235,True,0,"Arial",8,-2147483633,0)
+Gui.FormEmail.lstEmails.Create(ListView)
+Gui.FormEmail.lstEmails.Size(3720,1215)
+Gui.FormEmail.lstEmails.Position(3330,495)
+Gui.FormEmail.lstEmails.View(2)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.sAttach.Declare(String,"")
+V.Global.iRow.Declare(Long,0)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'coded by RLK
+	'Project is for Load King, it is for controlling how work orders are exported to sigmanest for rework. 
+    'when there is rework needed on work order, the user comes to this screen and rexports it as rework and we send over the 998000 sequence instead of the standard labor sequence for the nesting-workcenter.
+    'once the sigman next import csv as been created a email screen will appear allowing the user to email that csv to defualt emails that has been entered in by a supervisor user.  
+    'emails can be added a removed by the user at the time of emailing.
+    'the supervisor can create default subject/body text as well.  This information will only show on the screen for the supervisor user.
+	
+	'create datatable to be used for entering in jobs
+	F.Intrinsic.Control.CallSub(Create_EmptyDataTable)
+	
+	'creating context menu
+	F.Intrinsic.Control.CallSub(Create_ContextMenu)
+	
+	'check user
+	F.Intrinsic.Control.CallSub(Check_User)
+	
+	'setting anchors 
+	F.Intrinsic.Control.CallSub(Set_Anchors)
+	
+	'populate default emails
+	F.Intrinsic.Control.CallSub(Populate_Defualt_Emails)
+	
+	'showing screen
+	Gui.FormRework..Show
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.FormRework_UnLoad.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'check if connection exists to close if open
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!Con.Close
+	F.Intrinsic.Control.EndIf
+	
+	'ending program.
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.FormRework_UnLoad.End
+
+Program.Sub.cmdAdd_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sTemp.Declare(String,"")
+	
+	'adding selection to grid
+	F.Intrinsic.Control.If(V.Screen.FormRework!txtJob.Text,<>,"")
+		F.Intrinsic.String.Build("{0}_{1}",V.Screen.FormRework!txtJob.Text,V.Screen.FormRework!txtSuffix.Text,V.Local.sTemp)
+		F.Data.DataTable.AddRow("Job","Job_Suffix",V.Local.sTemp.UCase,"Quantity",0)
+		GUi.FormRework.cmdSubmit.Enabled(True)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.BlockEvents
+	Gui.FormRework.txtJob.Text("")
+	Gui.FormRework.txtSuffix.Text("")
+	F.Intrinsic.Control.UnBlockEvents
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdAdd_Click.End
+
+Program.Sub.cmdJobSuffixSeq_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.sSql.Declare(String,"")
+	V.Local.sTitles.Declare(String,"")
+	V.Local.sWidths.Declare(String,"")
+	
+	F.Intrinsic.UI.SetBrowserHotTypeAhead(True)
+	
+	'showing browser
+	F.Intrinsic.UI.Browser(1000,"",V.Local.sRet)
+	
+	F.Intrinsic.Control.If(V.Local.sRet,<>,V.Ambient.Cancel)
+		'setting values to text boxes onn the screen
+		F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+		Gui.FormRework.txtJob.Text(V.Local.sRet(0))
+		Gui.FormRework.txtSuffix.Text(V.Local.sRet(1))
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdJobSuffixSeq_Click.End
+
+Program.Sub.cmdSubmit_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sJob.Declare(String,"")
+	V.Local.sSuffix.Declare(String,"")
+	V.Local.i.Declare(Long,1)
+	V.Local.iCount.Declare(Long,1)
+	V.Local.sSql.Declare(String,"")
+	V.Local.sInstance.Declare(String,0)
+	V.Local.sJssi.Declare(String,"")
+	V.Local.sList.Declare(String,"")
+	v.Local.sDel.Declare(String,"")
+	v.Local.sDel2.Declare(String,"")
+	V.Local.sData.Declare(String,"")
+	v.Local.sImportPath.Declare(String,"")
+	v.Local.sFile.Declare(String,"")
+	v.Local.sRet.Declare(String,"")
+	v.Local.sName.Declare(String,"")
+	v.Local.bExist.Declare(Boolean,False)
+	V.Local.sJobs.Declare(String,"")
+	V.Local.sTemp.Declare(String,"")
+	V.Local.sMsg.Declare(String,"")
+	V.Local.sBody.Declare(String,"")
+	V.Local.sSubject.Declare(String,"")
+	V.Local.sEJob.Declare(String,"")
+	V.Local.sNJob.Declare(String,"")
+	V.Local.sPart.Declare(String,"")
+	V.Local.sCustomDir.Declare(String,"")
+	V.Local.sTempFile.Declare(String,"")
+	V.Local.sDateTime.Declare(String,"")
+	V.Local.iRet.Declare(Long,0)
+	
+	F.Intrinsic.UI.InvokeWaitDialog("Exporting Job Suffix..............")
+	Gui.FormRework.cmdSubmit.Enabled(False)
+
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+		F.ODBC.Connection!Con.OpenCompanyConnection(999)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.String.Build("Select Input_Dir From GCG_4447_Sigma_Dir Where Company = '{0}'",V.Caller.CompanyCode,V.Local.sSql)
+	F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSql,V.Local.sRet)
+	
+	'getting sigamnest iput file path
+	F.Intrinsic.Control.If(V.Local.sRet.Length,>,0)
+		V.Local.sImportPath.Set(V.Local.sRet)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.Msgbox("Go to Shop Floor Control > File > SigmaNest File Maintenance to set up Directories","Warning")
+		F.ODBC.Connection!Con.Close
+		F.Intrinsic.UI.CloseWaitDialog
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+	
+	'only processing jobs that the user has changed the quantity from 0
+	F.Intrinsic.Control.If(V.DataView.Job!VJob.Exists)
+		F.Data.DataView.Close("Job","VJob")
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataView.Create("Job","VJob",22,"Quantity > 0","")
+	
+	F.Intrinsic.String.Build("Select * From GCG_4447_Label_Data Where Job = '{0}'","-11111",V.Local.sSql)
+	F.Intrinsic.Control.If(V.DataTable.Label.Exists,=,True)
+		F.Data.DataTable.Close("Label")
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+		F.ODBC.Connection!Con.OpenCompanyConnection(999)
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.CreateFromSQL("Label","con",V.Local.sSql,True)
+	F.Intrinsic.Control.If(V.DataTable.ExportDT.Exists,=,True)
+		F.Data.DataTable.Close("ExportDT")
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+		F.ODBC.Connection!Con.OpenCompanyConnection(999)
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.CreateFromSQL("ExportDT","Con","SELECT '' as JOB_SUFFIX, Job, Suffix, RTRIM(PART) AS FULLPART, RTRIM(DESCRIPTION) AS DESCRIPTION, RTRIM(LEFT(PART,17)) AS Part, RTRIM(RIGHT(PART,3)) AS Rev, RTRIM(' ') AS RAWMATERIAL, Cast(QTY_ORDER as Double) as Qty_Order, '999' as PRIORITY, CAST('1900-01-01' AS DATE) AS START_DATE, DATE_DUE, RTRIM(' ') AS WC, RTRIM(' ') AS SEQ, CUSTOMER, SALES_ORDER, SALES_ORDER_LINE, PARENT_WO + '-' + PARENT_SUFFIX_PARENT AS PARENT_WO, RTRIM(' ') AS PARENT_PART, RTRIM(' ') AS RMPART, RTRIM(' ') AS RMDESC, CAST(0 AS DOUBLE) AS RMQTY, RTRIM(' ') AS RMUM, CAST(0 AS DOUBLE) AS SWLENGTH, CAST(0 AS DOUBLE) AS SWWIDTH, RTRIM(' ') AS GRAIN, RTRIM(' ') AS EDGETOP, RTRIM(' ') AS EDGEBOT, RTRIM(' ') AS EDGELEFT, RTRIM(' ') AS EDGERIGHT, RTRIM(' ') AS SEQ1, RTRIM(' ') AS LMO1, RTRIM(' ') AS WKG1, RTRIM(' ') AS SEQ1_BC, RTRIM(' ') AS SEQ2, RTRIM(' ') AS LMO2, RTRIM(' ') AS WKG2, RTRIM(' ') AS SEQ2_BC, RTRIM(' ') AS SEQ3, RTRIM(' ') AS LMO3, RTRIM(' ') AS WKG3, RTRIM(' ') AS SEQ3_BC, RTRIM(' ') AS SEQ4, RTRIM(' ') AS LMO4, RTRIM(' ') AS WKG4, RTRIM(' ') AS SEQ4_BC, RTRIM(' ') AS SEQ5, RTRIM(' ') AS LMO5, RTRIM(' ') AS WKG5, RTRIM(' ') AS SEQ5_BC, RTRIM(' ') AS SEQ6, RTRIM(' ') AS LMO6, RTRIM(' ') AS WKG6, RTRIM(' ') AS SEQ6_BC, RTRIM(' ') AS SEQ7, RTRIM(' ') AS LMO7, RTRIM(' ') AS WKG7, RTRIM(' ') AS SEQ7_BC, RTRIM(' ') AS SORT_CODE, CAST(0 AS DOUBLE) AS THICKNESS, UCASE(LEFT(COMMENTS_1,6)) as COMMENTS FROM V_JOB_HEADER WHERE JOB = '-1'",True)
+	
+	'getting last instance of the job suffix seq from label data table
+	'adding to the last instance and saving back to label data table
+	'using information from label data table to export the job suffix seq again. 
+	F.Intrinsic.Control.For(V.Local.i,0,V.DataView.Job!VJob.RowCount--,1)
+		F.Intrinsic.String.Split(V.DataView.Job!VJob(V.Local.i).Job_Suffix!FieldVal,"_",V.Local.sJob)
+		F.Intrinsic.Control.If(V.Local.i,=,0)
+			F.Intrinsic.String.Build("'{0}'",V.Local.sJob,V.Local.sJobs)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("{0},'{1}'",V.Local.sJobs,V.Local.sJob,V.Local.sjobs)
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.If(V.Local.sJob.UBound,=,1)
+			V.Local.sSuffix.Set(V.Local.sJob(1))
+		F.Intrinsic.Control.Else
+			V.Local.sSuffix.Set("")
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.String.Build("Select Top 1 * From GCG_4447_Label_Data Where Job = '{0}' and Suffix = '{1}'  and Seq <> '998000' Order by Instance Desc",V.Local.sJob,V.Local.sSuffix,V.Local.sSql)
+		F.Intrinsic.Control.If(V.DataTable.LabelTemp.Exists,=,True)
+			F.Data.DataTable.Close("LabelTemp")
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+			F.ODBC.Connection!Con.OpenCompanyConnection(999)
+		F.Intrinsic.Control.EndIf
+		F.Data.DataTable.CreateFromSQL("LabelTemp","con",V.Local.sSql,True)
+		F.Intrinsic.Control.If(V.DataTable.LabelTemp.RowCount--,<>,-1)
+			V.Local.sInstance.Set(V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Instance!FieldVal)
+		F.Intrinsic.Control.Else
+			V.Local.sInstance.Set("00")
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.String.Build("Select Top 1 Instance From GCG_4447_Label_Data Where Job = '{0}' and Suffix = '{1}' and Seq = '998000'",V.Local.sJob,V.Local.sSuffix,V.Local.sSql)
+		F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+			F.ODBC.Connection!Con.OpenCompanyConnection(999)
+		F.Intrinsic.Control.EndIf
+		F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSql,V.Local.sInstance)
+		
+		F.Intrinsic.Control.If(V.Local.sInstance.Length,=,0)
+			V.Local.sInstance.Set("-1")
+		F.Intrinsic.Control.EndIf
+		'looping though jobs
+		F.Intrinsic.Control.For(V.Local.iCount,1,V.DataView.Job!VJob(V.Local.i).Quantity!FieldValFloat,1)
+			F.Intrinsic.Math.Add(V.Local.sInstance.Long,1,V.Local.sInstance)
+			F.Intrinsic.String.LPad(V.Local.sInstance,"0",4,V.Local.sInstance)
+			'only created exports for jobs that have already been placed in the 4447 label data table
+			F.Intrinsic.Control.If(V.DataTable.LabelTemp.RowCount--,=,-1)
+				F.Intrinsic.String.Build("Job: {0} Suffix: {1} has not been previously exported.{2}Use Menu Item Shop Floor > Transactions > WO Export to intially add the Job to the Label Data Table.....",V.Local.sJob,V.Local.sSuffix,V.Ambient.NewLine,V.Local.sMsg)
+				F.Intrinsic.UI.Msgbox(V.Local.sMsg)
+				F.Intrinsic.Control.If(V.Local.sNJob.Length,=,0)
+					F.Intrinsic.String.Build("{0}_{1}",V.Local.sJob,V.Local.sSuffix,V.Local.sNJob)
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Build("{0},{1}_{2}",V.Local.sNJob,V.Local.sJob,V.Local.sSuffix,V.Local.sNJob)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.Else
+				'adding job suffix to export dt table to create input file for sigmanest
+				F.Intrinsic.String.Build("{0}_{1}_{2}_{3}",V.Local.sJob,V.Local.sSuffix,"998000",V.Local.sInstance,V.Local.sJssi)
+				F.Data.DataTable.SetValue("LabelTemp",-1,"Instance",V.Local.sInstance,"Jssi",V.Local.sJssi,"Seq","998000")
+				F.Data.DataTable.Merge("LabelTemp","Label",True,4)
+				F.Intrinsic.String.Build("SELECT Ucase(JOB) + '-' + SUFFIX AS JOB_SUFFIX, Job, Suffix, RTRIM(PART) AS FULLPART, RTRIM(DESCRIPTION) AS DESCRIPTION, RTRIM(LEFT(PART,17)) AS Part, RTRIM(RIGHT(PART,3)) AS Rev, RTRIM(' ') AS RAWMATERIAL, Cast(1 as Double) as QTY_ORDER, '999' as PRIORITY, CAST('1900-01-01' AS DATE) AS START_DATE, DATE_DUE, RTRIM(' ') AS WC, RTRIM(' ') AS SEQ, CUSTOMER, SALES_ORDER, SALES_ORDER_LINE, PARENT_WO + '-' + PARENT_SUFFIX_PARENT AS PARENT_WO, RTRIM(' ') AS PARENT_PART, RTRIM(' ') AS RMPART, RTRIM(' ') AS RMDESC, CAST(0 AS DOUBLE) AS RMQTY, RTRIM(' ') AS RMUM, CAST(0 AS DOUBLE) AS SWLENGTH, CAST(0 AS DOUBLE) AS SWWIDTH, RTRIM(' ') AS GRAIN, RTRIM(' ') AS EDGETOP, RTRIM(' ') AS EDGEBOT, RTRIM(' ') AS EDGELEFT, RTRIM(' ') AS EDGERIGHT, RTRIM(' ') AS SEQ1, RTRIM(' ') AS LMO1, RTRIM(' ') AS WKG1, RTRIM(' ') AS SEQ1_BC, RTRIM(' ') AS SEQ2, RTRIM(' ') AS LMO2, RTRIM(' ') AS WKG2, RTRIM(' ') AS SEQ2_BC, RTRIM(' ') AS SEQ3, RTRIM(' ') AS LMO3, RTRIM(' ') AS WKG3, RTRIM(' ') AS SEQ3_BC, RTRIM(' ') AS SEQ4, RTRIM(' ') AS LMO4, RTRIM(' ') AS WKG4, RTRIM(' ') AS SEQ4_BC, RTRIM(' ') AS SEQ5, RTRIM(' ') AS LMO5, RTRIM(' ') AS WKG5, RTRIM(' ') AS SEQ5_BC, RTRIM(' ') AS SEQ6, RTRIM(' ') AS LMO6, RTRIM(' ') AS WKG6, RTRIM(' ') AS SEQ6_BC, RTRIM(' ') AS SEQ7, RTRIM(' ') AS LMO7, RTRIM(' ') AS WKG7, RTRIM(' ') AS SEQ7_BC, RTRIM(' ') AS SORT_CODE, CAST(0 AS DOUBLE) AS THICKNESS, UCASE(LEFT(COMMENTS_1,6)) as COMMENTS, '' as Part_Rev, '' as SN84, '' as One, '' as Empty, '' as Instance, '' as Job_Suffix_Seq_Inst FROM V_JOB_HEADER WHERE JOB = '{0}' and Suffix = '{1}'",V.Local.sJob,V.Local.sSuffix,V.Local.sSql)
+				F.Intrinsic.Control.If(V.DataTable.ExportDTTemp.Exists,=,True)
+					F.Data.DataTable.Close("ExportDTTemp")
+				F.Intrinsic.Control.EndIf
+				F.Data.DataTable.CreateFromSQL("ExportDTTemp","Con",V.Local.sSql,True)
+				F.Intrinsic.String.RPad(V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Part!FieldValTrim," ",20,V.Local.sPart)
+				V.Local.sPart.RedimPreserve(0,1)				
+				F.Intrinsic.String.Right(V.Local.sPart,3,V.Local.sPart(1))
+				F.Intrinsic.String.Left(V.Local.sPart,17,V.Local.sPart(0))
+				F.Intrinsic.String.Build("{0}_{1}",V.Local.sPart(0).Trim,V.Local.sPart(1).Trim,V.Local.sPart)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SEQ","998000","PARENT_PART",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Parent_Part!FieldValTrim,"RMPART",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Material!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"RMDESC",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Material_Desc!FieldValTrim,"RMQTY",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Material_Qty!FieldVal,"RMUM",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Material_UM!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SWLENGTH",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).TotalLength!FieldVal,"SWWIDTH",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).TotalWidth!FieldVal,"GRAIN",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).GrainDir!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"EDGETOP",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).EBTopside!FieldValTrim,"EDGEBOT",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).EBBottomside!FieldValTrim,"EDGELEFT",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).EBLeftside!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"EDGERIGHT",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).EBRightside!FieldValTrim,"SEQ1",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq1!FieldValTrim,"LMO1",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).LMO1!FieldValTrim,"WKG1",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).WKG1!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SEQ1_BC",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).SEQ1_BC!FieldValTrim,"SEQ2",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq2!FieldValTrim,"LMO2",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).LMO2!FieldValTrim,"WKG2",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).WKG2!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SEQ2_BC",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq2_BC!FieldValTrim,"SEQ3",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq3!FieldValTrim,"LMO3",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).LMO3!FieldValTrim,"WKG3",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).WKG3!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SEQ3_BC",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq3_BC!FieldValTrim,"SEQ4",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq4!FieldValTrim,"LMO4",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).LMO4!FieldValTrim,"WKG4",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).WKG4!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SEQ4_BC",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).SEQ4_BC!FieldValTrim,"SEQ5",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq5!FieldValTrim,"LMO5",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).LMO5!FieldValTrim,"WKG5",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).WKG5!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SEQ5_BC",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq5_BC!FieldValTrim,"SEQ6",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq6!FieldValTrim,"LMO6",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).LMO6!FieldValTrim,"WKG6",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).WKG6!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SEQ6_BC",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq6_BC!FieldValTrim,"SEQ7",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq7!FieldValTrim,"LMO7",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).LMO7!FieldValTrim,"WKG7",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).WKG7!FieldValTrim)
+				F.Data.DataTable.SetValue("ExportDTTemp",-1,"SEQ7_BC",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).Seq7_BC!FieldValTrim,"SORT_CODE","","Part_Rev",V.Local.sPart,"SN84","SN84","One","1","Empty","","Instance",V.Local.sInstance,"Job_Suffix_Seq_Inst",V.DataTable.LabelTemp(V.DataTable.LabelTemp.RowCount--).JSSI!FieldValTrim)	
+				F.Data.DataTable.Merge("ExportDTTemp","ExportDT",True,4)
+				F.Data.DataTable.Close("ExportDTTemp")
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.iCount)
+		F.Data.DataTable.Close("LabelTemp")
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	'getting start date for job suffix and adding to table
+	F.Intrinsic.Control.If(V.DataTable.ExportDT.RowCount--,<>,-1)
+		F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+			F.ODBC.Connection!Con.OpenCompanyConnection(999)
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.String.Build("SELECT UCase(A.JOB) + '-' + A.SFX AS JOB_SUFFIX, A.BDATE FROM APSV3_UBDETAIL AS A WHERE A.SEQ = (SELECT MIN(B.SEQ) FROM APSV3_UBDETAIL AS B WHERE B.JOB = A.JOB AND B.SFX = A.SFX ) AND SEQTYPE = '1' AND A.JOB IN ({0})",V.Local.sJobs,V.Local.sSql)
+		f.Data.Dictionary.CreateFromSQL("StartDate","Con",V.Local.sSql)
+		f.Data.Dictionary.SetDefaultReturn("StartDate","1/1/1900")
+		f.Data.DataTable.FillFromDictionary("ExportDT","StartDate","JOB_SUFFIX","START_DATE")
+
+		f.Data.Dictionary.Close("StartDate")
+		
+		'get raw material for first sequence for job suffix
+		f.Data.Dictionary.CreateFromSQL("RawMat","Con","Select ucase(rtrim(Job_suffix)) as Job_Suffix, RTRIM(PART) AS PART from (select Ucase(rtrim(JOB)) + '-' + rtrim(suffix) as Job_suffix, Min(seq) as seq,(Select part from v_job_operations as op2 where op1.job = op2.job and op1.suffix=op2.suffix and op1.seq = op2.seq) as part from V_JOB_OPERATIONS as op1 where lmo = 'M' and seq < '995000' group by job_suffix order by seq) as B")
+'		f.ODBC.Connection!Con.OpenLocalRecordsetRO("rstMat","Select ucase(rtrim(Job_suffix)) as Job_Suffix, RTRIM(PART) AS PART from (select Ucase(rtrim(JOB)) + '-' + rtrim(suffix) as Job_suffix, Min(seq) as seq, (Select part from v_job_operations as op2 where op1.job = op2.job and op1.suffix=op2.suffix and op1.seq = op2.seq) as part from V_JOB_OPERATIONS as op1 where lmo = 'M' and seq < '995000' AND OP1.PART IN (SELECT INV.PART FROM V_INVENTORY_MSTR AS INV WHERE INV.PART = OP1.PART AND INV.CODE_SORT IN ('LAM PANEL','WOOD SHT','METAL SHT','RAW SURF'))  group by job_suffix order by seq) as B")
+'		f.Intrinsic.Control.DoUntil(v.ODBC.Con!rstMat.EOF)
+'			F.Intrinsic.Control.Try
+'				f.Data.Dictionary.UpdateItem("RawMat",v.ODBC.Con!rstMat.FieldVal!Job_Suffix,v.ODBC.Con!rstMat.FieldValTrim!Part)
+'			F.Intrinsic.Control.Catch
+'				f.Data.Dictionary.AddItem("RawMat",v.ODBC.Con!rstMat.FieldVal!Job_Suffix,v.ODBC.Con!rstMat.FieldValTrim!Part)
+'			F.Intrinsic.Control.EndTry
+'			f.ODBC.Con!rstMat.MoveNext
+'			F.Intrinsic.Control.DoEvents
+'		f.Intrinsic.Control.Loop
+'		
+'		F.Intrinsic.Control.If(V.ODBC.Con!rstMat.State,=,1)
+'			f.ODBC.Con!rstMat.Close
+'		F.Intrinsic.Control.EndIf
+		
+		F.Data.DataTable.CreateFromSQL("rstMat","con","Select ucase(rtrim(Job_suffix)) as Job_Suffix, RTRIM(PART) AS PART from (select Ucase(rtrim(JOB)) + '-' + rtrim(suffix) as Job_suffix, Min(seq) as seq, (Select part from v_job_operations as op2 where op1.job = op2.job and op1.suffix=op2.suffix and op1.seq = op2.seq) as part from V_JOB_OPERATIONS as op1 where lmo = 'M' and seq < '995000' AND OP1.PART IN (SELECT INV.PART FROM V_INVENTORY_MSTR AS INV WHERE INV.PART = OP1.PART AND INV.CODE_SORT IN ('LAM PANEL','WOOD SHT','METAL SHT','RAW SURF'))  group by job_suffix order by seq) as B",True)
+		
+		F.Intrinsic.Control.If(V.DataTable.rstMat.Exists)
+			F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.rstMat.RowCount--,1)
+				F.Intrinsic.Control.Try
+					F.Data.Dictionary.UpdateItem("RawMat",V.DataTable.rstMat(V.Local.i).Job_Suffix!FieldValTrim,V.DataTable.rstMat(V.Local.i).Part!FieldValTrim)
+				F.Intrinsic.Control.Catch
+					F.Data.Dictionary.AddItem("RawMat",V.DataTable.rstMat(V.Local.i).Job_Suffix!FieldValTrim,V.DataTable.rstMat(V.Local.i).Part!FieldValTrim)
+				F.Intrinsic.Control.EndTry
+			F.Intrinsic.Control.Next(V.Local.i)
+			
+			F.Data.DataTable.Close("rstMat")
+		F.Intrinsic.Control.EndIf
+		
+		f.Data.dictionary.SetDefaultReturn("RawMat","")
+		f.Data.DataTable.FillFromDictionary("ExportDT","RawMat","JOB_SUFFIX","RawMaterial")
+
+		f.Data.Dictionary.Close("RawMat")
+		
+		f.Data.Dictionary.CreateFromSQL("SortCode","con","SELECT RTRIM(PART) AS PART, RTRIM(CODE_SORT) AS CODE_SORT FROM V_INVENTORY_MSTR Order by Part")
+		f.Data.Dictionary.SetDefaultReturn("SortCode","")
+		f.Data.DataTable.FillFromDictionary("ExportDT","SortCode","RawMaterial","Sort_Code")
+
+		f.Data.Dictionary.Close("SortCode")
+		
+		'Set the Thickness of the Raw Material
+		F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+			F.ODBC.Connection!Con.OpenCompanyConnection(999)
+		F.Intrinsic.Control.EndIf
+		f.Data.Dictionary.CreateFromSQL("Thickness","con","SELECT RTRIM(PART) AS PART, IF(THICKNESS = '',0,ISNULL(THICKNESS,0)) AS THICKNESS FROM V_INVENTORY_MST3 ")
+		f.Data.Dictionary.SetDefaultReturn("Thickness",0)
+		f.Data.DataTable.FillFromDictionary("ExportDT","Thickness","RawMaterial","Thickness")
+
+		f.Data.Dictionary.Close("Thickness")
+		
+		'Get Top Level Sequence and its Work Center
+		F.Intrinsic.String.Build("Select a.Job + '-' + a.Suffix as Job_Suffix, rtrim(a.Part) as WC From V_Job_Operations a Where a.Seq = (Select Min(b.Seq) From V_Job_Operations b where a.job = b.job and a.suffix = b.suffix and LMO = 'L') and a.Job in({0})",V.Local.sJobs,V.Local.sSql)
+		F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+			F.ODBC.Connection!Con.OpenCompanyConnection(999)
+		F.Intrinsic.Control.EndIf
+		f.Data.Dictionary.CreateFromSQL("WC","con",V.Local.sSql)
+		f.Data.Dictionary.SetDefaultReturn("WC","")
+		f.Data.DataTable.FillFromDictionary("ExportDT","WC","JOB_SUFFIX","WC")
+
+		f.Data.Dictionary.Close("WC")
+		
+		'getting a list of nesting workgroups
+		V.Local.sSql.Set("select rtrim(Work_Group) as WC From WorkGroup_Head where nesting = 1")
+		F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+			F.ODBC.Connection!Con.OpenCompanyConnection(999)
+		F.Intrinsic.Control.EndIf
+		F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSQL,V.Local.sSQL)
+		F.Intrinsic.String.Replace(V.Local.sSQL,"*!*","",V.Local.sSQL)
+		F.Intrinsic.String.Replace(V.Local.sSQL,"#$#","','",V.Local.sSQL)
+		F.Intrinsic.String.Build("WC IN('{0}')",V.Local.sSQL,V.Local.sSQL)
+		
+		F.Intrinsic.Control.If(V.DataView.ExportDT!SNView.Exists)
+			F.Data.DataView.Close("ExportDT","SNView")
+		F.Intrinsic.Control.EndIf
+		
+		f.Data.DataView.Create("ExportDT","SNView")
+		F.Data.DataView.SetFilter("ExportDT","SNView",V.Local.sSQL)
+		
+		'removing non export job suffix from label table only jobs that gets exported to Sigma nest will get a rework instance
+		F.Intrinsic.Control.If(V.DataTable.LabelKeep.Exists)
+			F.Data.DataTable.Close("LabelKeep")
+		F.Intrinsic.Control.EndIf
+		f.Data.DataView.ToDataTableDistinct("ExportDT","SNView","LabelKeep","Job_Suffix_Seq_Inst",True)
+		F.Intrinsic.Control.If(V.DataTable.LabelKeep.RowCount--,<>,-1)
+			F.Intrinsic.Control.If(V.DataView.LabelKeep!Jssi.Exists)
+				F.Data.DataView.Close("LabelKeep","Jssi")
+			F.Intrinsic.Control.EndIf
+			f.Data.DataView.Create("LabelKeep","Jssi")
+			F.Intrinsic.Control.For(V.Local.i,0,V.DataView.ExportDT!SNView.RowCount--,1)
+				F.Intrinsic.Control.If(V.Local.i,=,0)
+					F.Intrinsic.String.Build("{0}_{1}",V.DataView.ExportDT!SNView(V.Local.i).Job!FieldValTrim,V.DataView.ExportDT!SNView(V.Local.i).Suffix!FieldValTrim,V.Local.sEJob)
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Build("{0},{1}_{2}",V.Local.sEJob,V.DataView.ExportDT!SNView(V.Local.i).Job!FieldValTrim,V.DataView.ExportDT!SNView(V.Local.i).Suffix!FieldValTrim,V.Local.sEJob)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.Next(V.Local.i)
+			f.Data.DataView.ToString("LabelKeep","Jssi","Job_Suffix_Seq_Inst","*!*","','",V.Local.sTemp)
+			F.Intrinsic.String.Build("Jssi Not In('{0}')",V.Local.sTemp,V.Local.sTemp)
+			F.Intrinsic.Control.If(V.DataView.Label!LabelRemove.Exists)
+				F.Data.DataView.Close("Label","LabelRemove")
+			F.Intrinsic.Control.EndIf
+			F.Data.DataView.Create("Label","LabelRemove",22,V.Local.sTemp,"")
+			F.Intrinsic.Control.For(V.Local.i,V.DataView.Label!LabelRemove.RowCount--,0,-1)
+				F.Intrinsic.Control.If(V.Local.i,=,0)
+					F.Intrinsic.String.Build("{0}_{1}",V.DataView.Label!LabelRemove(V.Local.i).Job!FieldValTrim,V.DataView.Label!LabelRemove(V.Local.i).Suffix!FieldValTrim,V.Local.sNJob)
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Build("{0},{1}_{2}",V.Local.sNJob,V.DataView.Label!LabelRemove(V.Local.i).Job!FieldValTrim,V.DataView.Label!LabelRemove(V.Local.i).Suffix!FieldValTrim,V.Local.sNJob)
+				F.Intrinsic.Control.EndIf
+				F.Data.DataTable.DeleteRow("Label",V.DataView.Label!LabelRemove(V.Local.i).DataTableIndex)
+			F.Intrinsic.Control.Next(V.Local.i)
+			F.Data.DataTable.AcceptChanges("Label")
+			F.Intrinsic.Control.If(V.DataView.Label!LabelRemove.Exists)
+				F.Data.DataView.Close("Label","LabelRemove")
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.If(V.DataView.LabelKeep!Jssi.Exists)
+				F.Data.DataView.Close("LabelKeep","Jssi")
+			F.Intrinsic.Control.EndIf
+			
+			'input file csv column list
+			V.Local.sList.Set("SN84*!*One*!*Empty*!*Job_Suffix_Seq_Inst*!*Part_Rev*!*QTY_Order*!*RMPart*!*Thickness*!*Start_Date*!*Customer*!*Empty*!*Priority*!*Empty*!*Empty*!*SWLength*!*SWWidth*!*Empty*!*Rev*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*WC*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Empty*!*Grain*!*Sales_Order*!*Sales_Order_Line")
+			
+			f.Intrinsic.String.Build("{0},{0}",v.Ambient.DblQuote,v.Local.sDel)
+			f.Intrinsic.String.Build("{0}{1}{0}",v.Ambient.DblQuote,v.Ambient.NewLine,v.Local.sDel2)
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.Control.If(V.DataTable.LabelKeep.Exists)
+			F.Data.DataTable.Close("LabelKeep")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.If(V.DataView.ExportDT!SNView.Exists)
+		F.Intrinsic.Control.If(V.DataView.ExportDT!SNView.RowCount--,<>,-1)
+			'creating datatable from view
+			F.Intrinsic.Control.If(V.DataTable.CSVExport.Exists)
+				F.Data.DataTable.Close("CSVExport")
+			F.Intrinsic.Control.EndIf
+			F.Data.DataView.ToDataTable("ExportDT","SNView","CSVExport")
+			'setting seq to the rework seq 
+'			F.Data.DataView.SetValue("ExportDT","SNView",-1,"Seq","998000")
+			F.Data.DataTable.SetValue("CSVExport",-1,"Seq","998000")
+'			F.Intrinsic.Control.For(V.Local.i,0,V.DataView.ExportDT!SNView.RowCount--,1)
+			F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.CSVExport.RowCount--,1)
+'				F.Intrinsic.String.Build("Select Top 1 WorkCenter From Workgroup_Line Where WorkGroup = '{0}'",V.DataView.ExportDT!SNView(V.Local.i).WC!FieldValTrim,V.Local.sSql)
+				F.Intrinsic.String.Build("Select Top 1 WorkCenter From Workgroup_Line Where WorkGroup = '{0}'",V.DataTable.CSVExport(V.Local.i).WC!FieldValTrim,V.Local.sSql)
+				F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+					F.ODBC.Connection!Con.OpenCompanyConnection(999)
+				F.Intrinsic.Control.EndIf
+				F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSql,V.Local.sSql)
+				F.Data.DataTable.SetValue("CSVExport",V.Local.i,"WC",V.Local.sSql.Trim)
+			F.Intrinsic.Control.Next(V.Local.i)
+			
+			F.Intrinsic.Control.If(V.DataView.CSVExport!SNView.Exists)
+				F.Data.DataView.Close("CSVExport","SNView")
+			F.Intrinsic.Control.EndIf
+			F.Data.DataView.Create("CSVExport","SNView")
+			
+			f.Data.DataView.ToString("CSVExport","SNView",V.Local.sList,"*!*",v.Local.sDel2,V.Local.sData)
+			F.Intrinsic.String.Replace(V.Local.sData,","," ",V.Local.sData)
+			F.Intrinsic.String.Replace(V.Local.sData,"*!*",V.Local.sDel,V.Local.sData)
+			
+			'saving rework wo to label data table
+			F.Intrinsic.Control.If(V.DataTable.Label.RowCount--,<>,-1)
+				F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+					F.ODBC.Connection!Con.OpenCompanyConnection(999)
+				F.Intrinsic.Control.EndIf
+				F.Data.DataTable.SaveToDB("Label","con","GCG_4447_Label_Data","Job*!*Suffix*!*Instance*!*Seq",256,"JOB@!@JOB*!*SUFFIX@!@SUFFIX*!*INSTANCE@!@INSTANCE*!*PART@!@PART*!*PARENT_JOB@!@PARENT_JOB*!*PARENT_SUFFIX@!@PARENT_SUFFIX*!*PARENT_PART@!@PARENT_PART*!*DESCRIPTION@!@DESCRIPTION*!*RUN_QTY@!@RUN_QTY*!*TOTAL_WO_QTY@!@TOTAL_WO_QTY*!*ORDER_NO@!@ORDER_NO*!*ORDER_LINE@!@ORDER_LINE*!*SEQ@!@SEQ*!*LMO@!@LMO*!*MATERIAL@!@MATERIAL*!*MATERIAL_DESC@!@MATERIAL_DESC*!*MATERIAL_QTY@!@MATERIAL_QTY*!*MATERIAL_UM@!@MATERIAL_UM*!*TOTALLENGTH@!@TOTALLENGTH*!*TOTALWIDTH@!@TOTALWIDTH*!*GRAINDIR@!@GRAINDIR*!*EBTOPSIDE@!@EBTOPSIDE*!*EBBOTTOMSIDE@!@EBBOTTOMSIDE*!*EBLEFTSIDE@!@EBLEFTSIDE*!*EBRIGHTSIDE@!@EBRIGHTSIDE*!*SEQ1@!@SEQ1*!*LMO1@!@LMO1*!*WKG1@!@WKG1*!*SEQ1_BC@!@SEQ1_BC*!*SEQ2@!@SEQ2*!*LMO2@!@LMO2*!*WKG2@!@WKG2*!*SEQ2_BC@!@SEQ2_BC*!*SEQ3@!@SEQ3*!*LMO3@!@LMO3*!*WKG3@!@WKG3*!*SEQ3_BC@!@SEQ3_BC*!*SEQ4@!@SEQ4*!*LMO4@!@LMO4*!*WKG4@!@WKG4*!*SEQ4_BC@!@SEQ4_BC*!*SEQ5@!@SEQ5*!*LMO5@!@LMO5*!*WKG5@!@WKG5*!*SEQ5_BC@!@SEQ5_BC*!*LMO6@!@LMO6*!*SEQ6_BC@!@SEQ6_BC*!*SEQ7@!@SEQ7*!*LMO7@!@LMO7*!*WKG7@!@WKG7*!*SEQ7_BC@!@SEQ7_BC*!*IMAGE_PATH@!@IMAGE_PATH*!*JSSI@!@JSSI")
+			F.Intrinsic.Control.EndIf
+			'Fixing the Extra and missing double quotes
+			f.Intrinsic.String.Build("{0}{1}{1}",v.Ambient.NewLine,v.Ambient.DblQuote,v.Local.sDel)
+			f.Intrinsic.String.Replace(v.Local.sData,v.Local.sDel," ",v.Local.sData)
+			f.Intrinsic.String.Build("{0}{1}{0}",v.Ambient.DblQuote,v.Local.sData,v.Local.sData)
+			
+			'Get rid of the time from Date
+			f.Intrinsic.String.Replace(v.Local.sData," 12:00:00 AM","",v.Local.sData)
+			
+			v.Local.sName.Redim(0,0)
+			f.Intrinsic.Control.If(v.Local.sImportPath.Right1,=,"\")
+				v.Local.sName.Set(v.Local.sImportPath.Trim)
+			f.Intrinsic.Control.Else
+				f.Intrinsic.String.Build("{0}\",v.Local.sImportPath.Trim,v.Local.sName)
+				V.Local.sImportPath.Set(V.Local.sName)
+			f.Intrinsic.Control.EndIf
+			
+			f.Intrinsic.String.Build("{0}{1}.csv",v.Ambient.Date.FormatMMDDYYYY,v.Ambient.Time.FormatHHNNSS,V.Local.sFile)
+			f.Intrinsic.String.Build("{0}{1}",v.Local.sName,V.Local.sFile,v.Local.sName)
+			'Make sure the Directory exists before saving it
+			f.Intrinsic.File.DirExists(v.Local.sImportPath,v.Local.bExist)
+			
+			f.Intrinsic.Control.If(v.Local.bExist)
+				f.Intrinsic.File.String2File(v.Local.sName,v.Local.sData)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.File.CreateDir(V.Local.sImportPath)
+				f.Intrinsic.File.String2File(v.Local.sName,v.Local.sData)
+			f.Intrinsic.Control.EndIf
+			
+			'saving file in files directory to email
+'			f.Intrinsic.String.Build("{0}\{1}",V.Caller.GasDir,V.Local.sFile,v.Local.sName)
+			F.Intrinsic.String.Build("{0}\Custom\4447\ReWork_Export_PDF\",V.Caller.GlobalDir,V.Local.sCustomDir)
+			F.Intrinsic.File.DirExists(V.Local.sCustomDir,V.Local.bExist)
+			F.Intrinsic.Control.If(V.Local.bExist)
+				F.Intrinsic.File.GetFileList(V.Local.sCustomDir,V.Local.sTemp)
+				F.Intrinsic.String.Split(V.Local.sTemp,":",V.Local.sTemp)
+				F.Intrinsic.Control.For(V.Local.i,0,V.Local.sTemp.UBound,1)
+					F.Intrinsic.Control.If(V.Local.sTemp(V.Local.i).Trim,<>,"")
+						F.Intrinsic.String.Build("{0}{1}",V.Local.sCustomDir,V.Local.sTemp(V.Local.i),V.Local.sTempFile)
+						F.Intrinsic.File.GetFileDateTime(V.Local.sTempFile,V.Local.sDateTime)
+						F.Intrinsic.Date.DateDiff("D",V.Ambient.Date,V.Local.sDateTime.DateComp,V.Local.iRet)
+						F.Intrinsic.Control.If(V.Local.iRet,>=,7)
+							F.Intrinsic.File.DeleteFile(V.Local.sTempFile)
+						F.Intrinsic.Control.EndIf
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.Next(V.Local.i)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.File.CreateDir(V.Local.sCustomDir)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.String.Build("{0}{1}",V.Local.sCustomDir,V.Local.sFile,V.Local.sName)
+			f.Intrinsic.File.String2File(v.Local.sName,v.Local.sData)
+			
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+			
+	'getting default subject and body
+	F.Intrinsic.String.Replace(V.Screen.FormRework!txtDefualtSubject.Text,"{EJOB-SUFF}",V.Local.sEJob,V.Local.sSubject)
+	F.Intrinsic.String.Replace(V.Local.sSubject,"{NJOB-SUFF}",V.Local.sNJob,V.Local.sSubject)
+	F.Intrinsic.String.Replace(V.Screen.FormRework!txtDefualtBody.Text,"{EJOB-SUFF}",V.Local.sEJob,V.Local.sBody)
+	F.Intrinsic.String.Replace(V.Local.sBody,"{NJOB-SUFF}",V.Local.sNJob,V.Local.sBody)
+	
+	F.Intrinsic.Control.If(V.DataView.Job!VJob.RowCount--,<>,-1)
+		'calling sub to send email with sigmanest input csv as an attachment
+		f.Intrinsic.Control.CallSub(Send_Email,"File",V.Local.sName,"Body",V.Local.sBody,"Subject",V.Local.sSubject)
+	F.Intrinsic.Control.EndIf
+	
+	'closing datatables
+	f.Data.DataTable.Close("ExportDT")
+	F.Data.DataTable.Close("Label")
+	
+	'clearing job datatable and clearing rowstates so user can run program again
+	F.Data.DataTable.DeleteRow("Job")
+	F.Data.DataTable.AcceptChanges("Job")
+	
+	F.Intrinsic.UI.CloseWaitDialog
+	'closing connection
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!con.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdSubmit_Click.End
+
+Program.Sub.Send_Email.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sEmail.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	
+	'adding defualt emails to listview these emails a entered in by a supervisor 
+	V.Local.sEmail.Set(V.Screen.FormRework!txtDefualtEmail.Text)
+	
+	Gui.FormEmail.lstEmails.ClearItems
+	F.Intrinsic.Control.If(V.Local.sEmail.Length,>,0)
+		F.Intrinsic.String.Split(V.Local.sEmail,";",V.Local.sEmail)
+		F.Intrinsic.Control.If(V.Local.sEmail.UBound,=,0)
+			Gui.FormEmail.lstEmails.AddListItem(V.Local.sEmail.UCase,V.Local.sEmail.UCase)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.For(V.Local.i,0,V.Local.sEmail.UBound,1)
+				Gui.FormEmail.lstEmails.AddListItem(V.Local.sEmail(V.Local.i).UCase,V.Local.sEmail(V.Local.i).UCase)
+			F.Intrinsic.Control.Next(V.Local.i)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	'setting body and subject to text box to allow user to enter/modify each
+	Gui.FormEmail.txtBody.Text(V.Args.Body)
+	Gui.FormEmail.txtSubject.Text(V.Args.Subject)
+	
+	Gui.FormEmail..Visible(True)
+	Gui.FormRework..Visible(False)
+	
+	V.Global.sAttach.Set(V.Args.File)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Send_Email.End
+
+Program.Sub.txtDefualtEmail_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'highlighting text so user can start typing and not have to delete
+	Gui.FormRework.txtDefualtEmail.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.txtDefualtEmail_GotFocus.End
+
+Program.Sub.txtEnterEmail_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'highlighting text so user can start typing and not have to delete
+	Gui.FormEmail.txtEnterEmail.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.txtEnterEmail_GotFocus.End
+
+Program.Sub.txtSubject_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'highlighting text so user can start typing and not have to delete
+	Gui.FormEmail.txtSubject.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.txtSubject_GotFocus.End
+
+Program.Sub.cmdSendEmail_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.iID.Declare(Long,0)
+	V.Local.sSenderEmail.Declare(String,"")
+	V.Local.sText.Declare(String,"")
+	v.Local.sCRLF.Declare(String,"")
+	V.Local.sFile.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.sCompanyName.Declare(String,"")
+	V.Local.sTemp.Declare(String,"")
+	V.Local.iIndex.Declare(Long,0)
+	V.Local.iSize.Declare(Long,0)
+	
+	'setting company name to variable this is used if no default sender email as been entered.
+	'spaces are removed from company name to create a noreply email sender.
+	V.Local.sCompanyName.Set(V.Ambient.CompanyName)
+	F.Intrinsic.String.Replace(V.Local.sCompanyName," ","",V.Local.sCompanyName)
+	Gui.FormEmail.lstEmails.RetrieveAllListItems(V.Local.sRet)
+	
+	'replacing *!* with , this allows courier to send the email to all receipents in a single email rather than an email to each individual seperately
+	F.Intrinsic.String.Replace(V.Local.sRet,"*!*",",",V.Local.sRet)
+	
+	'getting user id
+	F.Global.Security.getuserID(V.Caller.User,V.Caller.CompanyCode,V.Local.iID)
+	
+	'Get email address of GS User
+	V.Local.sSenderEmail.Set(V.Screen.FormRework!txtDefualtSenderEmail.Text)
+	V.Local.sSenderEmail.Set(V.Local.sSenderEmail.Trim)
+	F.Intrinsic.Control.If(V.Local.sSenderEmail.Length,=,0)
+		F.Intrinsic.String.Build("NoReply@{0}.com",V.Local.sCompanyName,V.Local.sSenderEmail)
+	F.Intrinsic.Control.EndIf
+	
+	V.Local.sText.Set(V.Screen.FormEmail!txtBody.Text)
+	F.Intrinsic.String.Split(V.Global.sAttach,"\",V.Local.sFile)
+	F.Intrinsic.String.Build("{0}*!*{1}\CUSTOM\4447\ReWork_Export_PDF",V.Local.sFile(V.Local.sFile.UBound),V.Caller.GlobalDir,V.Local.sFile)
+	'Send the email
+	'Replace LF by CRLF on the file to avoid email server issues with LF character 
+	'CRLF
+	F.Intrinsic.String.Concat(v.ASCII.13,v.ASCII.10,v.Local.sCRLF)
+	F.Intrinsic.String.Replace(V.Local.sText,v.ASCII.10,v.Local.sCRLF,V.Local.sText)
+	
+	F.Intrinsic.Control.If(v.Local.sRet.Length,<=,100)
+		F.Intrinsic.Control.If(V.Local.sFile.Left1,=,"*")
+			F.Global.Messaging.QueueMessage(V.Caller.CompanyCode,V.Local.iID,"",V.Screen.FormEmail!txtSubject.Text,V.Local.sSenderEmail,V.Local.sRet,V.Local.sText,5,,False,,,,,,,,"",False)
+		F.Intrinsic.Control.Else
+			F.Global.Messaging.QueueMessage(V.Caller.CompanyCode,V.Local.iID,"",V.Screen.FormEmail!txtSubject.Text,V.Local.sSenderEmail,V.Local.sRet,V.Local.sText,5,,False,,,,,,,,V.Local.sFile,False)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Split(V.Local.sRet,",",V.Local.sTemp)
+		V.Local.sRet.Set("")
+		F.Intrinsic.Control.For(V.Local.i,0,V.Local.sTemp.UBound,1)
+			F.Intrinsic.Control.If(V.Local.sRet(V.Local.iIndex).Length,=,0)
+				V.Local.sRet(V.Local.iIndex).Set(V.Local.sTemp(V.Local.i))
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Math.Evaluate("[V.Local.sRet(V.Local.iIndex).Length]+[V.Local.sTemp(V.Local.i).Length]+1",V.Local.iSize)
+				F.Intrinsic.Control.If(V.Local.iSize,<=,100)
+					F.Intrinsic.String.Build("{0},{1}",V.Local.sRet(V.Local.iIndex),V.Local.sTemp(V.Local.i),V.Local.sRet(V.Local.iIndex))
+					F.Intrinsic.Control.If(V.Local.iSize,=,100)
+						F.Intrinsic.Math.Add(V.Local.iIndex,1,V.Local.iIndex)
+						V.Local.sRet.RedimPreserve(0,V.Local.iIndex)
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.Else
+					F.Intrinsic.Math.Add(V.Local.iIndex,1,V.Local.iIndex)
+					V.Local.sRet.RedimPreserve(0,V.Local.iIndex)
+					V.Local.sRet(V.Local.iIndex).Set(V.Local.sTemp(V.Local.i))
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.i)
+			
+		F.Intrinsic.Control.For(V.Local.i,0,V.Local.sRet.UBound,1)
+			F.Intrinsic.Control.If(V.Local.sFile.Left1,=,"*")
+				F.Global.Messaging.QueueMessage(V.Caller.CompanyCode,V.Local.iID,"",V.Screen.FormEmail!txtSubject.Text,V.Local.sSenderEmail,V.Local.sRet(V.Local.i),V.Local.sText,5,,False,,,,,,,,"",False)
+			F.Intrinsic.Control.Else
+				F.Global.Messaging.QueueMessage(V.Caller.CompanyCode,V.Local.iID,"",V.Screen.FormEmail!txtSubject.Text,V.Local.sSenderEmail,V.Local.sRet(V.Local.i),V.Local.sText,5,,False,,,,,,,,V.Local.sFile,False)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.i)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.CallSub(FormEmail_Unload)
+	
+	F.Intrinsic.Control.ExitSub
+ 
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdSendEmail_Click.End
+
+Program.Sub.FormEmail_UnLoad.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'showing email form and hiding rework entry form
+	Gui.FormEmail..Visible(False)
+	Gui.FormRework..Visible(True)
+	Gui.FormRework.cmdSubmit.Enabled(True)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.FormEmail_UnLoad.End
+
+Program.Sub.cmdAddEmail_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.sEmail.Declare(String,"")
+	V.Local.sRet.Declare(String,"")
+	V.Local.bRet.Declare(Boolean,False)
+	V.Local.sTemp.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	
+	V.Local.sEmail.Set(V.Screen.FormEmail!txtEnterEmail.Text)
+	'Exit if no email entered
+	F.Intrinsic.Control.If(V.Local.sEmail.Trim,=,"")
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+	
+	'retrieving emails from listview
+	Gui.FormEmail.lstEmails.RetrieveAllListItems(V.Local.sRet)
+	
+	F.Intrinsic.Control.If(V.Local.sRet.Trim,=,"***NORETURN***")
+		F.Global.Messaging.IsAddressValid(V.Local.sEmail.UCase,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet)
+			Gui.FormEmail.lstEmails.AddListItem(V.Local.sEmail.UCase,V.Local.sEmail.UCase)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.UI.Msgbox("Invalid Email Address")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+		F.Intrinsic.Control.For(V.Local.i,0,V.Local.sRet.UBound,1)
+			F.Intrinsic.Control.If(V.Local.sRet(V.Local.i),=,V.Local.sEmail.UCase)
+				Gui.FormEmail.txtEnterEmail.Text("")
+				F.Intrinsic.Control.ExitSub
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.i)
+		F.Global.Messaging.IsAddressValid(V.Local.sEmail.UCase,V.Local.bRet)
+		F.Intrinsic.Control.If(V.Local.bRet)
+			Gui.FormEmail.lstEmails.AddListItem(V.Local.sEmail.UCase,V.Local.sEmail.UCase)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.UI.Msgbox("Invalid Email Address")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	Gui.FormEmail.txtEnterEmail.Text("")
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdAddEmail_Click.End
+
+Program.Sub.cmdRemoveEmail_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	V.Local.iIndex.Declare(Long,0)
+	V.Local.sRet.Declare(String,"")
+	
+	'removing selected emails from listview
+	Gui.FormEmail.lstEmails.RetrieveCheckedListItems(V.Local.sRet)
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	
+	F.Intrinsic.Control.For(V.Local.i,V.Local.sRet.UBound,0,-1)
+		Gui.FormEmail.lstEmails.RemoveItem(V.Local.sRet(V.Local.i))
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdRemoveEmail_Click.End
+
+Program.Sub.Populate_Defualt_Emails.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	
+	F.Intrinsic.Control.BlockEvents
+	
+	'getting saved subject and body and adding to text box a supervisor user can modify and resave new defualt subject/body text
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+		F.ODBC.Connection!Con.OpenCompanyConnection(999)
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.CreateFromSQL("Email","con","Select Status, Email, Subject, Body From GCG_4447_Email",True)
+	
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!con.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.Email.RowCount--,1)
+		F.Intrinsic.Control.If(V.DataTable.Email(V.Local.i).Status!FieldValTrim,=,"DEFAULT")
+			Gui.FormRework.txtDefualtEmail.Text(V.DataTable.Email(V.Local.i).Email!FieldValTrim)
+			Gui.FormRework.txtDefualtSubject.Text(V.DataTable.Email(V.Local.i).Subject!FieldValTrim)
+			Gui.FormRework.txtDefualtBody.Text(V.DataTable.Email(V.Local.i).Body!FieldValTrim)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.If(V.DataTable.Email(V.Local.i).Status!FieldValTrim,=,"SENDER")
+				Gui.FormRework.txtDefualtSenderEmail.Text(V.DataTable.Email(V.Local.i).Email!FieldValTrim)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Data.DataTable.Close("Email")
+	
+	F.Intrinsic.Control.UnBlockEvents
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Populate_Defualt_Emails.End
+
+Program.Sub.Set_Anchors.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'setting anchors on screeens
+	Gui.FormRework.cmdAdd.Anchor(5)
+	GUi.FormRework.cmdJobSuffixSeq.Anchor(5)
+	Gui.FormRework.cmdSubmit.Anchor(6)
+	GUi.FormRework.GsGridControl1.Anchor(15)
+	Gui.FormRework.lblDefaultEmail.Anchor(6)
+	Gui.FormRework.lblDefaultSenderEmail.Anchor(6)
+	Gui.FormRework.lblJob.Anchor(5)
+	GUi.FormRework.lblSuffix.Anchor(5)
+	Gui.FormRework.txtDefualtEmail.Anchor(6)
+	Gui.FormRework.txtDefualtSenderEmail.Anchor(6)
+	GUi.FormRework.txtJob.Anchor(5)
+	Gui.FormRework.txtSuffix.Anchor(5)
+	Gui.FormRework.lblDefualtBody.Anchor(6)
+	Gui.FormRework.lblDefualtSubject.Anchor(6)
+	Gui.FormRework.lblWildCard.Anchor(6)
+	Gui.FormRework.lblWildCards.Anchor(14)
+	Gui.FormRework.txtDefualtSubject.Anchor(14)
+	Gui.FormRework.txtDefualtBody.Anchor(14)
+	Gui.FormRework.cmdSave.Anchor(6)
+	
+	Gui.FormEmail.cmdAddEmail.Anchor(5)
+	Gui.FormEmail.cmdRemoveEmail.Anchor(5)
+	Gui.FormEmail.cmdSendEmail.Anchor(6)
+	Gui.FormEmail.lblBody.Anchor(5)
+	Gui.FormEmail.lblEnterEmail.Anchor(5)
+	Gui.FormEmail.lblRec.Anchor(5)
+	Gui.FormEmail.lblSubject.Anchor(5)
+	Gui.FormEmail.lstEmails.Anchor(5)
+	Gui.FormEmail.txtBody.Anchor(15)
+	Gui.FormEmail.txtSubject.Anchor(15)
+	Gui.FormEmail.txtEnterEmail.Anchor(5)
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry	
+Program.Sub.Set_Anchors.End
+
+Program.Sub.cmdSave_Click.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.i.Declare(Long,0)
+	
+	F.Intrinsic.Control.BlockEvents
+	
+	'saving defualt body/subject
+	Gui.FormRework.cmdSave.Enabled(False)
+	
+	F.Intrinsic.UI.InvokeWaitDialog("Saving Data........")
+	F.Intrinsic.UI.Sleep(1)
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,0)
+		F.ODBC.Connection!Con.OpenCompanyConnection(999)
+	F.Intrinsic.Control.EndIf
+	F.Data.DataTable.CreateFromSQL("Email","con","Select Status, Email, Subject, Body From GCG_4447_Email",True)
+	
+	F.Intrinsic.Control.If(V.DataTable.Email.RowCount--,=,-1)
+		F.Data.DataTable.AddRow("Email","Status","DEFAULT")
+		F.Data.DataTable.AddRow("Email","Status","SENDER")
+	F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.Control.For(V.Local.i,0,V.DataTable.Email.RowCount--,1)
+		F.Intrinsic.Control.If(V.DataTable.Email(V.Local.i).Status!FieldValTrim,=,"DEFAULT")
+			F.Data.DataTable.SetValue("Email",V.Local.i,"Email",V.Screen.FormRework!txtDefualtEmail.Text,"Subject",V.Screen.FormRework!txtDefualtSubject.Text,"Body",V.Screen.FormRework!txtDefualtBody.Text)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Control.If(V.DataTable.Email(V.Local.i).Status!FieldValTrim,=,"SENDER")
+				F.Data.DataTable.SetValue("Email",V.Local.i,"Email",V.Screen.FormRework!txtDefualtSenderEmail.Text)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.i)
+	
+	F.Data.DataTable.SaveToDB("Email","con","GCG_4447_Email","Status",256,"Status@!@Status*!*Email@!@Email*!*Subject@!@Subject*!*Body@!@Body")
+	
+	F.Intrinsic.Control.If(V.ODBC.Con.Exists,=,1)
+		F.ODBC.Connection!con.Close
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.Close("Email")
+	F.Intrinsic.UI.CloseWaitDialog
+	F.Intrinsic.Control.UnBlockEvents
+	
+	Gui.FormRework.cmdSave.Enabled(True)
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry	
+Program.Sub.cmdSave_Click.End
+
+Program.Sub.txtDefualtSenderEmail_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'selecting all text
+	Gui.FormRework.txtDefualtSenderEmail.SelectAll
+
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry	
+Program.Sub.txtDefualtSenderEmail_GotFocus.End
+
+Program.Sub.txtDefualtSubject_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'selecting all text
+	Gui.FormRework.txtDefualtSubject.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry	
+Program.Sub.txtDefualtSubject_GotFocus.End
+
+Program.Sub.txtJob_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'selecting all text
+	Gui.FormRework.txtJob.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry	
+Program.Sub.txtJob_GotFocus.End
+
+Program.Sub.txtSuffix_GotFocus.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'selecting all text
+	Gui.FormRework.txtSuffix.SelectAll
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.txtSuffix_GotFocus.End
+
+Program.Sub.Remove_Job.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	F.Intrinsic.Control.BlockEvents
+	
+	'removing job from grid 
+	F.Data.DataTable.DeleteRow("Job",V.Global.iRow)
+	F.Data.DataTable.AcceptChanges("Job")
+	
+	F.Intrinsic.Control.UnBlockEvents
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Remove_Job.End
+
+Program.Sub.GsGridControl1_RowCellClick.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.iX.Declare(Long,0)
+	V.Local.iY.Declare(Long,0)
+	
+	F.Intrinsic.Control.BlockEvents
+	'getting qty of the cell before it gets changed. This is used if the program has to set the cell back to the orginal value.
+	F.Intrinsic.Control.If(V.Global.iRow,<>,-1)
+		F.Intrinsic.Control.If(V.Args.Column.UCase,<>,"PART")
+			'attach menu to grid
+			F.Intrinsic.API.GetMousePosition(V.Local.iX,V.Local.iY)
+			Gui.FormRework..ContextMenuShow("RemoveJob",V.Local.iX,V.Local.iY)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.UnBlockEvents
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.GsGridControl1_RowCellClick.End
+
+Program.Sub.GsGridControl1_MouseCellEnter.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	V.Local.iRet.Declare(Long,0)
+	
+	'checking if removejob is in the call stack exit out of the mouse cell enter event
+	F.Intrinsic.Control.IsInCallstack("RemoveJob",V.Local.iRet)
+	
+	F.Intrinsic.Control.If(V.Local.iRet,>,0)
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.Control.BlockEvents
+	
+	'getting row position to be used when removing job from the grid.
+	V.Global.iRow.Set(V.Args.Row)
+	
+	F.Intrinsic.Control.UnBlockEvents
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.GsGridControl1_MouseCellEnter.End
+
+Program.Sub.Create_EmptyDataTable.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'creating empty datable to to save selection made by user.
+	F.Data.DataTable.Create("Job",True)
+	F.Data.DataTable.AddColumn("Job","Job_Suffix","String")
+	F.Data.DataTable.AddColumn("Job","Quantity","Float")
+	
+	'attaching datatable to grid
+	Gui.FormRework.GsGridControl1.AddGridviewFromDatatable("Job","Job")
+	Gui.FormRework.GsGridControl1.SetColumnProperty("Job","Job_Suffix","readonly",True)
+	Gui.FormRework.GsGridControl1.SetColumnProperty("Job","Job_Suffix","AllowEdit",False)
+	Gui.FormRework.GsGridControl1.SetColumnProperty("Job","Quantity","readonly",False)
+	Gui.FormRework.GsGridControl1.SetColumnProperty("Job","Quantity","AllowEdit",True)
+	Gui.FormRework.GsGridControl1.MainView("Job")
+	
+	F.Intrinsic.Control.ExitSub
+	
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Create_EmptyDataTable.End
+
+Program.Sub.Create_ContextMenu.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'creating context menu
+	Gui.FormRework..ContextMenuCreate("RemoveJob")
+	'adding the menu items
+	Gui.FormRework..ContextMenuAddItem("RemoveJob","Item 0",0)
+	'setting item text
+	Gui.FormRework..ContextMenuSetItemText("RemoveJob","Item 0","Remove Job")
+	'attaching menu to subroutine
+	Gui.FormRework..ContextMenuSetItemEventHandler("RemoveJob","Item 0",Remove_Job)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Create_ContextMenu.End
+
+Program.Sub.Check_User.Start
+F.Intrinsic.Control.Try
+	V.Local.sError.Declare(String,"")
+	
+	'only showing default text box if supervsr is signed in
+	F.Intrinsic.Control.If(V.Caller.User,=,"SUPERVSR")
+		Gui.FormRework.txtDefualtEmail.Visible(True)
+		Gui.FormRework.lblDefaultEmail.Visible(True)
+		Gui.FormRework.txtDefualtSenderEmail.Visible(True)
+		Gui.FormRework.lblDefaultSenderEmail.Visible(True)
+		Gui.FormRework.lblDefualtBody.Visible(True)
+		Gui.FormRework.lblDefualtSubject.Visible(True)
+		Gui.FormRework.lblWildCard.Visible(True)
+		Gui.FormRework.lblWildCards.Visible(True)
+		Gui.FormRework.lblDefualtEmailNote.Visible(True)
+		Gui.FormRework.txtDefualtBody.Visible(True)
+		Gui.FormRework.txtDefualtSubject.Visible(True)
+		Gui.FormRework.cmdSave.Visible(True)
+		Gui.FormRework..Size(5340,11700)
+	F.Intrinsic.Control.Else
+		Gui.FormRework.txtDefualtEmail.Visible(False)
+		Gui.FormRework.lblDefaultEmail.Visible(False)
+		Gui.FormRework.txtDefualtSenderEmail.Visible(False)
+		Gui.FormRework.lblDefaultSenderEmail.Visible(False)
+		Gui.FormRework.lblDefualtBody.Visible(False)
+		Gui.FormRework.lblDefualtSubject.Visible(False)
+		Gui.FormRework.lblWildCard.Visible(False)
+		Gui.FormRework.lblWildCards.Visible(False)
+		Gui.FormRework.lblDefualtEmailNote.Visible(False)
+		Gui.FormRework.txtDefualtBody.Visible(False)
+		Gui.FormRework.txtDefualtSubject.Visible(False)
+		Gui.FormRework.cmdSave.Visible(False)
+		Gui.FormRework..Size(5340,8100)
+	F.Intrinsic.Control.EndIf
+	
+	Gui.FormEmail.lstEmails.Checkboxes(True)
+	
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+		F.Intrinsic.String.Build("Project: {0}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}","GCG_4447_Rework_Export.g2u",V.Ambient.NewLine,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.CallSub(FormRework_UnLoad)
+	Function.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndTry
+Program.Sub.Check_User.End
